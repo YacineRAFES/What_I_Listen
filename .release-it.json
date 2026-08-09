@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/release-it@20/schema/release-it.json",
+  "git": {
+    "commitMessage": "chore(release): v${version}",
+    "tagName": "v${version}",
+    "requireCleanWorkingDir": true,
+    "requireUpstream": true
+  },
+  "npm": {
+    "publish": false
+  },
+  "github": {
+    "release": true,
+    "releaseName": "What I Listen v${version}",
+    "autoGenerate": true,
+    "assets": [
+      "dist/*.exe"
+    ]
+  },
+  "hooks": {
+    "after:bump": [
+      "npm run check",
+      "npm run dist"
+    ]
+  }
+}
