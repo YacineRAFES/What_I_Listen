@@ -9,7 +9,7 @@
   "scripts": {
     "start": "electron .",
     "start:service": "node src/server.mjs",
-    "check": "node --check electron-main.mjs && node --check src/overlay-service.mjs && node --check src/server.mjs && node --check public/overlay.js && node --check public/app.js && node --check public/visualizer.js && node --check public/settings.js",
+    "check": "node --check electron-main.mjs && node --check preload.cjs && node --check src/audio-capture-preload.cjs && node --check src/overlay-service.mjs && node --check src/server.mjs && node --check public/audio-capture.js && node --check public/overlay.js && node --check public/app.js && node --check public/visualizer.js && node --check public/settings.js",
     "dist": "electron-builder --win nsis"
   },
   "engines": {
@@ -27,6 +27,7 @@
     "productName": "What I Listen",
     "files": [
       "electron-main.mjs",
+      "preload.cjs",
       "src/**/*",
       "public/**/*",
       "package.json"
