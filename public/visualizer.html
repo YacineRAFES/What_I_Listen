@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Visualiseur — What I Listen</title>
+    <title data-i18n="visualizer.title">Visualiseur — What I Listen</title>
     <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/visualizer.css">
   </head>
@@ -16,40 +16,41 @@
         </div>
       </header>
 
-      <nav class="main-nav" aria-label="Navigation principale">
-        <a href="/app">Accueil</a>
-        <a class="active" href="/visualizer">Visualiseur</a>
-        <a href="/settings">Paramètres</a>
+      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app" data-i18n="nav.home">Accueil</a>
+        <a class="active" href="/visualizer" data-i18n="nav.visualizer">Visualiseur</a>
+        <a href="/settings" data-i18n="nav.settings">Paramètres</a>
       </nav>
 
       <section class="page-heading">
-        <p class="eyebrow">PERSONNALISATION</p>
-        <h2>Visualiseur musical</h2>
-        <p class="intro">Choisis le mouvement décoratif affiché derrière les informations du morceau dans OBS.</p>
+        <p class="eyebrow" data-i18n="visualizer.eyebrow">PERSONNALISATION</p>
+        <h2 data-i18n="visualizer.heading">Visualiseur musical</h2>
+        <p class="intro" data-i18n="visualizer.intro">Choisis le mouvement décoratif affiché derrière les informations du morceau dans OBS.</p>
       </section>
 
-      <section class="options" aria-label="Choix du visualiseur">
+      <section class="options" data-i18n-aria-label="visualizer.optionsLabel" aria-label="Choix du visualiseur">
         <button class="option" type="button" data-mode="bars">
           <span class="preview bars"><i></i><i></i><i></i><i></i><i></i></span>
-          <strong>Barres</strong><small>Un égaliseur vert animé.</small>
+          <strong data-i18n="visualizer.bars">Barres</strong><small data-i18n="visualizer.barsDescription">Un égaliseur vert animé.</small>
         </button>
         <button class="option" type="button" data-mode="ripple">
           <span class="preview ripples"><i></i><i></i><i></i></span>
-          <strong>Ondes</strong><small>Des cercles lumineux qui se propagent.</small>
+          <strong data-i18n="visualizer.ripple">Ondes</strong><small data-i18n="visualizer.rippleDescription">Des cercles lumineux qui se propagent.</small>
         </button>
         <button class="option" type="button" data-mode="pulse">
           <span class="preview pulse"><i></i></span>
-          <strong>Halo</strong><small>Une lueur douce qui respire.</small>
+          <strong data-i18n="visualizer.pulse">Halo</strong><small data-i18n="visualizer.pulseDescription">Une lueur douce qui respire.</small>
         </button>
         <button class="option" type="button" data-mode="off">
           <span class="preview off">—</span>
-          <strong>Sans animation</strong><small>Un overlay parfaitement statique.</small>
+          <strong data-i18n="visualizer.off">Sans animation</strong><small data-i18n="visualizer.offDescription">Un overlay parfaitement statique.</small>
         </button>
       </section>
 
-      <p id="save-status" class="save-status" role="status">Chargement du choix actuel…</p>
-      <p class="note">Ce sont des animations décoratives : elles suivent l’état lecture/pause, pas le rythme audio réel.</p>
+      <p id="save-status" class="save-status" role="status" data-i18n="visualizer.loading">Chargement du choix actuel…</p>
+      <p class="note" data-i18n="visualizer.note">Ce sont des animations décoratives : elles suivent l’état lecture/pause, pas le rythme audio réel.</p>
     </main>
+    <script src="/i18n.js"></script>
     <script src="/visualizer.js"></script>
   </body>
 </html>

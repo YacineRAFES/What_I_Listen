@@ -1,5 +1,13 @@
 const options = [...document.querySelectorAll('.option')];
 const status = document.querySelector('#save-status');
+const { t } = window.i18n;
+
+let statusKey = 'visualizer.loading';
+
+function setStatus(key) {
+  statusKey = key;
+  status.textContent = t(key);
+}
 
 function select(mode) {
   options.forEach((option) => {
@@ -15,16 +23,16 @@ async function load() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     select(data.visualizer);
-    status.textContent = 'Choix enregistré. L’overlay OBS se met à jour automatiquement.';
+    setStatus('visualizer.saved');
   } catch {
-    status.textContent = 'Impossible de charger les réglages.';
+    setStatus('visualizer.loadError');
   }
 }
 
 options.forEach((option) => option.addEventListener('click', async () => {
   const mode = option.dataset.mode;
   select(mode);
-  status.textContent = 'Enregistrement…';
+  setStatus('visualizer.saving');
   try {
     const response = await fetch('/api/visualizer', {
       method: 'POST',
@@ -32,11 +40,13 @@ options.forEach((option) => option.addEventListener('click', async () => {
       body: JSON.stringify({ visualizer: mode }),
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    status.textContent = 'Choix enregistré. L’overlay OBS se met à jour automatiquement.';
+    setStatus('visualizer.saved');
   } catch {
-    status.textContent = 'Enregistrement impossible. Réessaie.';
+    setStatus('visualizer.saveError');
     load();
   }
 }));
+
+document.addEventListener('app-language-change', () => setStatus(statusKey));
 
 load();

@@ -3,6 +3,12 @@
 .setting-copy p { color: #cfc2dd; line-height: 1.45; margin: 0; max-width: 610px; }
 .help-card { margin-top: 14px; }
 .help-card strong { color: #f0e5ff; }
+.language-select select { appearance: none; background: #241634; border: 1px solid #8f69b6; border-radius: 9px; color: #f9f7ff; cursor: pointer; font: inherit; font-weight: 700; min-width: 132px; padding: 10px 36px 10px 13px; }
+.language-select { position: relative; }
+.language-select::after { color: #d9bcf4; content: '⌄'; font-size: 20px; pointer-events: none; position: absolute; right: 11px; top: 5px; }
+.language-select select:focus-visible { outline: 2px solid #d7a8ff; outline-offset: 3px; }
+.language-select select:disabled { cursor: wait; opacity: .55; }
+.sr-only { height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .switch { cursor: pointer; flex: 0 0 auto; height: 34px; position: relative; width: 60px; }
 .switch input { height: 0; opacity: 0; width: 0; }
 .slider { background: #40324e; border-radius: 999px; inset: 0; position: absolute; transition: background .2s ease; }
@@ -12,4 +18,4 @@
 .switch input:focus-visible + .slider { outline: 2px solid #d7a8ff; outline-offset: 3px; }
 .switch input:disabled + .slider { opacity: .55; }
 .save-status { color: #b9ffb2; font-weight: 700; margin: 20px 0 0; min-height: 24px; }
-@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; } }
+@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; }.language-select { margin-top: 3px; } }

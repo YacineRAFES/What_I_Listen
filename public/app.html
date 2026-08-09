@@ -3,33 +3,33 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>What I Listen — Deezer</title>
+    <title data-i18n="app.title">What I Listen — Deezer</title>
     <link rel="stylesheet" href="/app.css">
   </head>
   <body>
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">LECTURE EN COURS</p>
+          <p class="eyebrow" data-i18n="app.eyebrow">LECTURE EN COURS</p>
           <h1>What I Listen <span>— Deezer</span></h1>
         </div>
         <div class="header-actions">
-          <div id="connection" class="connection checking">Connexion…</div>
+          <div id="connection" class="connection checking" data-i18n="app.connection.checking">Connexion…</div>
         </div>
       </header>
 
-      <nav class="main-nav" aria-label="Navigation principale">
-        <a class="active" href="/app">Accueil</a>
-        <a href="/visualizer">Visualiseur</a>
-        <a href="/settings">Paramètres</a>
+      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a class="active" href="/app" data-i18n="nav.home">Accueil</a>
+        <a href="/visualizer" data-i18n="nav.visualizer">Visualiseur</a>
+        <a href="/settings" data-i18n="nav.settings">Paramètres</a>
       </nav>
 
       <section class="track-card" aria-live="polite">
-        <img id="cover" class="cover" alt="Pochette du morceau en cours">
+        <img id="cover" class="cover" data-i18n-alt="app.track.coverAlt" alt="Pochette du morceau en cours">
         <div class="track-copy">
-          <p id="playback" class="playback">Recherche de Deezer…</p>
-          <h2 id="title">Aucun morceau détecté</h2>
-          <p id="artist">Lance Deezer et joue un titre.</p>
+          <p id="playback" class="playback" data-i18n="app.track.searching">Recherche de Deezer…</p>
+          <h2 id="title" data-i18n="app.track.none">Aucun morceau détecté</h2>
+          <p id="artist" data-i18n="app.track.prompt">Lance Deezer et joue un titre.</p>
           <p id="album" class="album"></p>
         </div>
       </section>
@@ -37,28 +37,29 @@
       <section class="guide">
         <div class="guide-heading">
           <div>
-            <p class="eyebrow">CONFIGURATION UNIQUE</p>
-            <h2>Ajouter l’overlay dans OBS</h2>
+            <p class="eyebrow" data-i18n="app.guide.eyebrow">CONFIGURATION UNIQUE</p>
+            <h2 data-i18n="app.guide.title">Ajouter l’overlay dans OBS</h2>
           </div>
-          <span class="guide-badge">Source Navigateur</span>
+          <span class="guide-badge" data-i18n="app.guide.badge">Source Navigateur</span>
         </div>
 
         <ol>
-          <li>Garde cette application ouverte pendant le stream.</li>
-          <li>Dans OBS, dans <strong>Sources</strong>, clique sur <strong>+</strong> puis choisis <strong>Navigateur</strong>.</li>
-          <li>Donne-lui un nom, par exemple <code>What I Listen — Deezer</code>.</li>
-          <li>Colle l’URL locale ci-dessous, puis règle la taille sur <strong>520 × 130</strong>.</li>
+          <li data-i18n="app.guide.step1">Garde cette application ouverte pendant le stream.</li>
+          <li data-i18n="app.guide.step2">Dans OBS, dans Sources, clique sur + puis choisis Navigateur.</li>
+          <li data-i18n="app.guide.step3">Donne-lui un nom, par exemple What I Listen — Deezer.</li>
+          <li data-i18n="app.guide.step4">Colle l’URL locale ci-dessous, puis règle la taille sur 520 × 130.</li>
         </ol>
 
         <div class="url-box">
           <code id="obs-url">http://127.0.0.1:38491/</code>
-          <button id="copy-url" type="button">Copier l’URL</button>
+          <button id="copy-url" type="button" data-i18n="app.guide.copy">Copier l’URL</button>
         </div>
-        <p class="hint">L’overlay s’affiche uniquement lorsqu’un morceau Deezer est détecté. Masque ou affiche la source avec l’icône œil d’OBS.</p>
+        <p class="hint" data-i18n="app.guide.hint">L’overlay s’affiche uniquement lorsqu’un morceau Deezer est détecté. Masque ou affiche la source avec l’icône œil d’OBS.</p>
       </section>
 
       <p id="error" class="error" role="status"></p>
     </main>
+    <script src="/i18n.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>

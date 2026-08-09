@@ -4,36 +4,44 @@ const title = document.querySelector('#title');
 const artist = document.querySelector('#artist');
 const album = document.querySelector('#album');
 const status = document.querySelector('#status');
+const { t } = window.i18n;
 
 let previousCoverUrl = '';
+let latestData = null;
 const debugMode = new URLSearchParams(window.location.search).has('debug');
 
 function update(data) {
+  latestData = data;
+  if (data.language) window.i18n.setLanguage(data.language);
   if (!data.available) {
     if (!debugMode) {
       card.classList.remove('visible');
       return;
     }
 
-    title.textContent = 'Deezer non détecté';
-    artist.textContent = data.error || 'Lance un morceau dans Deezer.';
-    album.textContent = 'La source se masquera automatiquement dès que la lecture est détectée.';
-    status.textContent = 'Mode diagnostic';
+    title.textContent = t('overlay.notDetected');
+    artist.textContent = data.error || t('overlay.prompt');
+    album.textContent = t('overlay.diagnosticHint');
+    status.textContent = t('overlay.diagnostic');
     card.classList.add('paused', 'visible');
     refreshCover(data);
     return;
   }
 
-  title.textContent = data.title || 'Titre inconnu';
-  artist.textContent = data.artist || 'Artiste inconnu';
+  title.textContent = data.title || t('overlay.unknownTitle');
+  artist.textContent = data.artist || t('overlay.unknownArtist');
   album.textContent = data.album || '';
-  status.textContent = data.playback === 'playing' ? 'En lecture sur Deezer' : 'En pause sur Deezer';
+  status.textContent = data.playback === 'playing' ? t('overlay.playing') : t('overlay.paused');
   card.classList.toggle('paused', data.playback !== 'playing');
   card.dataset.visualizer = data.visualizer || 'bars';
 
   refreshCover(data);
   card.classList.add('visible');
 }
+
+document.addEventListener('app-language-change', () => {
+  if (latestData) update(latestData);
+});
 
 function refreshCover(data) {
   if (!data.coverUrl || data.coverUrl === previousCoverUrl) return;

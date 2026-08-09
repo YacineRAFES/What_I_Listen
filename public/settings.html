@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Paramètres — What I Listen</title>
+    <title data-i18n="settings.title">Paramètres — What I Listen</title>
     <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/settings.css">
   </head>
@@ -16,37 +16,52 @@
         </div>
       </header>
 
-      <nav class="main-nav" aria-label="Navigation principale">
-        <a href="/app">Accueil</a>
-        <a href="/visualizer">Visualiseur</a>
-        <a class="active" href="/settings">Paramètres</a>
+      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app" data-i18n="nav.home">Accueil</a>
+        <a href="/visualizer" data-i18n="nav.visualizer">Visualiseur</a>
+        <a class="active" href="/settings" data-i18n="nav.settings">Paramètres</a>
       </nav>
 
       <section class="page-heading">
-        <p class="eyebrow">APPLICATION</p>
-        <h2>Paramètres</h2>
-        <p class="intro">Choisis la façon dont What I Listen se comporte lorsque tu le lances.</p>
+        <p class="eyebrow" data-i18n="settings.eyebrow">APPLICATION</p>
+        <h2 data-i18n="settings.heading">Paramètres</h2>
+        <p class="intro" data-i18n="settings.intro">Choisis la façon dont What I Listen se comporte lorsque tu le lances.</p>
       </section>
 
       <section class="settings-card">
         <div class="setting-copy">
-          <h3>Démarrer discrètement</h3>
-          <p>Ouvre l’application près de l’horloge Windows. L’overlay OBS fonctionne même si la fenêtre est masquée.</p>
+          <h3 data-i18n="settings.startHidden.title">Démarrer discrètement</h3>
+          <p data-i18n="settings.startHidden.description">Ouvre l’application près de l’horloge Windows. L’overlay OBS fonctionne même si la fenêtre est masquée.</p>
         </div>
-        <label class="switch" title="Démarrer discrètement">
+        <label class="switch" data-i18n-title="settings.startHidden.title" title="Démarrer discrètement">
           <input id="start-hidden" type="checkbox">
           <span class="slider"></span>
         </label>
       </section>
 
+      <section class="settings-card language-card">
+        <div class="setting-copy">
+          <h3 data-i18n="settings.language.title">Langue de l’application</h3>
+          <p data-i18n="settings.language.description">Choisis la langue utilisée dans l’application et dans l’overlay OBS.</p>
+        </div>
+        <label class="language-select" for="language">
+          <span class="sr-only" data-i18n="settings.language.label">Langue de l’application</span>
+          <select id="language" name="language">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+      </section>
+
       <section class="settings-card help-card">
         <div class="setting-copy">
-          <h3>Quitter l’application</h3>
-          <p>Utilise le clic droit sur l’icône près de l’horloge, puis <strong>Quitter</strong>, pour arrêter le service et l’overlay.</p>
+          <h3 data-i18n="settings.quit.title">Quitter l’application</h3>
+          <p data-i18n="settings.quit.description">Utilise le clic droit sur l’icône près de l’horloge, puis Quitter, pour arrêter le service et l’overlay.</p>
         </div>
       </section>
-      <p id="save-status" class="save-status" role="status">Chargement des paramètres…</p>
+      <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des paramètres…</p>
     </main>
+    <script src="/i18n.js"></script>
     <script src="/settings.js"></script>
   </body>
 </html>

@@ -1,5 +1,24 @@
 const startHidden = document.querySelector('#start-hidden');
+const language = document.querySelector('#language');
 const status = document.querySelector('#save-status');
+const { t } = window.i18n;
+
+let statusKey = 'settings.loading';
+
+function setStatus(key) {
+  statusKey = key;
+  status.textContent = t(key);
+}
+
+async function saveSettings(payload) {
+  const response = await fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
 
 async function load() {
   try {
@@ -7,32 +26,48 @@ async function load() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const settings = await response.json();
     startHidden.checked = settings.startHidden;
-    status.textContent = 'Paramètres chargés.';
+    language.value = settings.language || window.i18n.language;
+    setStatus('settings.loaded');
   } catch {
-    status.textContent = 'Impossible de charger les paramètres.';
+    language.value = window.i18n.language;
+    setStatus('settings.loadError');
   }
 }
 
 startHidden.addEventListener('change', async () => {
   const value = startHidden.checked;
   startHidden.disabled = true;
-  status.textContent = 'Enregistrement…';
+  setStatus('settings.saving');
   try {
-    const response = await fetch('/api/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startHidden: value }),
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    status.textContent = value
-      ? 'Enregistré. Au prochain lancement, l’application démarrera près de l’horloge.'
-      : 'Enregistré. Au prochain lancement, la fenêtre s’affichera.';
+    await saveSettings({ startHidden: value });
+    setStatus(value ? 'settings.startHiddenOn' : 'settings.startHiddenOff');
   } catch {
     startHidden.checked = !value;
-    status.textContent = 'Enregistrement impossible. Réessaie.';
+    setStatus('settings.saveError');
   } finally {
     startHidden.disabled = false;
   }
+});
+
+language.addEventListener('change', async () => {
+  const selectedLanguage = language.value;
+  language.disabled = true;
+  setStatus('settings.saving');
+  try {
+    const settings = await saveSettings({ language: selectedLanguage });
+    window.i18n.setLanguage(settings.language);
+    setStatus('settings.languageSaved');
+  } catch {
+    language.value = window.i18n.language;
+    setStatus('settings.saveError');
+  } finally {
+    language.disabled = false;
+  }
+});
+
+document.addEventListener('app-language-change', () => {
+  language.value = window.i18n.language;
+  setStatus(statusKey);
 });
 
 load();

@@ -7,7 +7,8 @@ import { createSessionManager } from 'windows-media-sessions';
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
 const visualizerModes = new Set(['bars', 'ripple', 'pulse', 'off']);
-const defaultSettings = Object.freeze({ visualizer: 'bars', startHidden: true });
+const supportedLanguages = new Set(['fr', 'en']);
+const defaultSettings = Object.freeze({ visualizer: 'bars', startHidden: true, language: 'fr' });
 
 function parsePort(raw, fallback) {
   const value = Number.parseInt(raw ?? '', 10);
@@ -22,6 +23,10 @@ function normalizeVisualizer(value) {
   return visualizerModes.has(value) ? value : 'bars';
 }
 
+function normalizeLanguage(value) {
+  return supportedLanguages.has(value) ? value : defaultSettings.language;
+}
+
 async function loadSettings(settingsPath) {
   if (!settingsPath) return { ...defaultSettings };
   try {
@@ -29,6 +34,7 @@ async function loadSettings(settingsPath) {
     return {
       visualizer: normalizeVisualizer(settings.visualizer),
       startHidden: typeof settings.startHidden === 'boolean' ? settings.startHidden : defaultSettings.startHidden,
+      language: normalizeLanguage(settings.language),
     };
   } catch (error) {
     if (error.code !== 'ENOENT') console.warn(`Paramètres du visualiseur ignorés : ${error.message}`);
@@ -73,6 +79,7 @@ export async function startOverlayService({
     thumbnail: '',
     visualizer: savedSettings.visualizer,
     startHidden: savedSettings.startHidden,
+    language: savedSettings.language,
     version: 0,
     error: '',
   };
@@ -80,6 +87,7 @@ export async function startOverlayService({
   const manager = createSessionManager(backendPath ? { backendPath } : undefined);
   let stopListening = () => {};
   let isListening = false;
+  const settingsListeners = new Set();
 
   function matchesConfiguredApp(session) {
     const appId = String(session.sourceAppUserModelId ?? '').toLowerCase();
@@ -133,6 +141,7 @@ export async function startOverlayService({
       error: state.error || undefined,
       version: state.version,
       visualizer: state.visualizer,
+      language: state.language,
       coverUrl: `/cover/${state.version}`,
     };
   }
@@ -141,12 +150,24 @@ export async function startOverlayService({
     return {
       visualizer: state.visualizer,
       startHidden: state.startHidden,
+      language: state.language,
     };
   }
 
   async function saveSettings() {
     if (!settingsPath) return;
     await writeFile(settingsPath, `${JSON.stringify(settingsForClient(), null, 2)}\n`, 'utf8');
+  }
+
+  function notifySettingsChanged() {
+    const settings = settingsForClient();
+    settingsListeners.forEach((listener) => {
+      try {
+        listener(settings);
+      } catch (error) {
+        console.warn(`Écouteur de paramètres ignoré : ${error.message}`);
+      }
+    });
   }
 
   function svgPlaceholder() {
@@ -199,6 +220,7 @@ export async function startOverlayService({
         if (visualizer !== payload.visualizer) throw new Error('Visualiseur inconnu.');
         state.visualizer = visualizer;
         await saveSettings();
+        notifySettingsChanged();
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify({ visualizer }));
       } catch (error) {
         send(response, 400, 'application/json; charset=utf-8', JSON.stringify({ error: error.message }));
@@ -208,9 +230,15 @@ export async function startOverlayService({
     if (request.method === 'POST' && url.pathname === '/api/settings') {
       try {
         const payload = await readJsonBody(request);
-        if (typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
-        state.startHidden = payload.startHidden;
+        const updatesStartHidden = Object.hasOwn(payload, 'startHidden');
+        const updatesLanguage = Object.hasOwn(payload, 'language');
+        if (!updatesStartHidden && !updatesLanguage) throw new Error('Aucun paramètre à enregistrer.');
+        if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
+        if (updatesLanguage && !supportedLanguages.has(payload.language)) throw new Error('Langue non prise en charge.');
+        if (updatesStartHidden) state.startHidden = payload.startHidden;
+        if (updatesLanguage) state.language = payload.language;
         await saveSettings();
+        notifySettingsChanged();
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(settingsForClient()));
       } catch (error) {
         send(response, 400, 'application/json; charset=utf-8', JSON.stringify({ error: error.message }));
@@ -247,6 +275,9 @@ export async function startOverlayService({
         break;
       case '/app.js':
         await sendStatic(response, 'app.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/i18n.js':
+        await sendStatic(response, 'i18n.js', 'text/javascript; charset=utf-8');
         break;
       case '/visualizer':
       case '/visualizer.html':
@@ -319,6 +350,10 @@ export async function startOverlayService({
     url: `http://${host}:${port}/`,
     state: stateForClient,
     settings: settingsForClient,
+    onSettingsChanged(listener) {
+      settingsListeners.add(listener);
+      return () => settingsListeners.delete(listener);
+    },
     async close() {
       stopListening();
       if (isListening) {

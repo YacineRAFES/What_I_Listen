@@ -7,6 +7,23 @@ let overlayService = null;
 let tray = null;
 let isQuitting = false;
 
+const nativeTranslations = {
+  fr: {
+    windowTitle: 'What I Listen — Deezer',
+    show: 'Afficher What I Listen',
+    quit: 'Quitter',
+  },
+  en: {
+    windowTitle: 'What I Listen — Deezer',
+    show: 'Show What I Listen',
+    quit: 'Quit',
+  },
+};
+
+function nativeText(key, language = 'fr') {
+  return (nativeTranslations[language] ?? nativeTranslations.fr)[key];
+}
+
 function showMainWindow() {
   if (!mainWindow) return createWindow({ showOnReady: true });
   if (mainWindow.isMinimized()) mainWindow.restore();
@@ -43,15 +60,21 @@ function createWindow({ showOnReady = false } = {}) {
   return mainWindow.loadURL(`${overlayService.url}app`);
 }
 
-function createTray() {
+function updateTray(language) {
+  if (!tray) return;
+  tray.setToolTip(nativeText('windowTitle', language));
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: nativeText('show', language), click: () => { void showMainWindow(); } },
+    { type: 'separator' },
+    { label: nativeText('quit', language), click: () => app.quit() },
+  ]));
+  mainWindow?.setTitle(nativeText('windowTitle', language));
+}
+
+function createTray(language) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b877ff"/><stop offset="1" stop-color="#64e58b"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#1b1029"/><path d="M20 7v12.2a4.5 4.5 0 1 1-2-3.75V10l8-2v9.2a4.5 4.5 0 1 1-2-3.75V5z" fill="url(#g)"/></svg>`;
   tray = new Tray(nativeImage.createFromDataURL(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`));
-  tray.setToolTip('What I Listen — Deezer');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Afficher What I Listen', click: () => { void showMainWindow(); } },
-    { type: 'separator' },
-    { label: 'Quitter', click: () => app.quit() },
-  ]));
+  updateTray(language);
   tray.on('click', () => { void showMainWindow(); });
 }
 
@@ -73,7 +96,8 @@ app.whenReady().then(async () => {
     settingsPath: join(app.getPath('userData'), 'overlay-settings.json'),
   });
   await createWindow({ showOnReady: !overlayService.settings().startHidden });
-  createTray();
+  createTray(overlayService.settings().language);
+  overlayService.onSettingsChanged(({ language }) => updateTray(language));
 
   app.on('activate', async () => {
     await showMainWindow();
