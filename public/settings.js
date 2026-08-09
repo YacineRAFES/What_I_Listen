@@ -1,4 +1,5 @@
 const startHidden = document.querySelector('#start-hidden');
+const titleMarquee = document.querySelector('#title-marquee');
 const language = document.querySelector('#language');
 const status = document.querySelector('#save-status');
 const { t } = window.i18n;
@@ -26,6 +27,7 @@ async function load() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const settings = await response.json();
     startHidden.checked = settings.startHidden;
+    titleMarquee.checked = settings.titleMarquee !== false;
     language.value = settings.language || window.i18n.language;
     setStatus('settings.loaded');
   } catch {
@@ -46,6 +48,21 @@ startHidden.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     startHidden.disabled = false;
+  }
+});
+
+titleMarquee.addEventListener('change', async () => {
+  const value = titleMarquee.checked;
+  titleMarquee.disabled = true;
+  setStatus('settings.saving');
+  try {
+    await saveSettings({ titleMarquee: value });
+    setStatus(value ? 'settings.titleMarqueeOn' : 'settings.titleMarqueeOff');
+  } catch {
+    titleMarquee.checked = !value;
+    setStatus('settings.saveError');
+  } finally {
+    titleMarquee.disabled = false;
   }
 });
 

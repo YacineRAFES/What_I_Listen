@@ -8,7 +8,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
 const visualizerModes = new Set(['bars', 'ripple', 'pulse', 'off']);
 const supportedLanguages = new Set(['fr', 'en']);
-const defaultSettings = Object.freeze({ visualizer: 'bars', startHidden: true, language: 'fr' });
+const defaultSettings = Object.freeze({ visualizer: 'bars', startHidden: true, titleMarquee: true, language: 'fr' });
 const audioBandCount = 16;
 
 function parsePort(raw, fallback) {
@@ -50,6 +50,7 @@ async function loadSettings(settingsPath) {
     return {
       visualizer: normalizeVisualizer(settings.visualizer),
       startHidden: typeof settings.startHidden === 'boolean' ? settings.startHidden : defaultSettings.startHidden,
+      titleMarquee: typeof settings.titleMarquee === 'boolean' ? settings.titleMarquee : defaultSettings.titleMarquee,
       language: normalizeLanguage(settings.language),
     };
   } catch (error) {
@@ -95,6 +96,7 @@ export async function startOverlayService({
     thumbnail: '',
     visualizer: savedSettings.visualizer,
     startHidden: savedSettings.startHidden,
+    titleMarquee: savedSettings.titleMarquee,
     language: savedSettings.language,
     audio: {
       active: false,
@@ -165,6 +167,7 @@ export async function startOverlayService({
       error: state.error || undefined,
       version: state.version,
       visualizer: state.visualizer,
+      titleMarquee: state.titleMarquee,
       language: state.language,
       coverUrl: `/cover/${state.version}`,
     };
@@ -174,6 +177,7 @@ export async function startOverlayService({
     return {
       visualizer: state.visualizer,
       startHidden: state.startHidden,
+      titleMarquee: state.titleMarquee,
       language: state.language,
     };
   }
@@ -292,11 +296,14 @@ export async function startOverlayService({
       try {
         const payload = await readJsonBody(request);
         const updatesStartHidden = Object.hasOwn(payload, 'startHidden');
+        const updatesTitleMarquee = Object.hasOwn(payload, 'titleMarquee');
         const updatesLanguage = Object.hasOwn(payload, 'language');
-        if (!updatesStartHidden && !updatesLanguage) throw new Error('Aucun paramètre à enregistrer.');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
+        if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && !supportedLanguages.has(payload.language)) throw new Error('Langue non prise en charge.');
         if (updatesStartHidden) state.startHidden = payload.startHidden;
+        if (updatesTitleMarquee) state.titleMarquee = payload.titleMarquee;
         if (updatesLanguage) state.language = payload.language;
         await saveSettings();
         notifySettingsChanged();

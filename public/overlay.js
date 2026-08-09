@@ -1,6 +1,7 @@
 const card = document.querySelector('#now-playing');
 const cover = document.querySelector('#cover');
 const title = document.querySelector('#title');
+const titlePrimary = document.querySelector('#title-primary');
 const artist = document.querySelector('#artist');
 const album = document.querySelector('#album');
 const status = document.querySelector('#status');
@@ -14,6 +15,8 @@ const debugMode = query.has('debug');
 const previewMode = query.has('preview');
 let lastAudioUpdate = 0;
 let previewAnimationFrame = null;
+let titleMarqueeAnimationFrame = null;
+let titleMarqueeEnabled = true;
 
 function applyAudioLevels(audio) {
   const bands = Array.isArray(audio?.bands) ? audio.bands : [];
@@ -56,16 +59,48 @@ function ensurePreviewAnimation() {
   }
 }
 
+function updateTitleMarquee() {
+  titleMarqueeAnimationFrame = null;
+  title.classList.remove('scrolling');
+  title.style.removeProperty('--title-scroll-distance');
+  title.style.removeProperty('--title-scroll-duration');
+
+  if (!titleMarqueeEnabled || title.clientWidth === 0) return;
+
+  const titleWidth = titlePrimary.getBoundingClientRect().width;
+  if (titleWidth <= title.clientWidth + 1) return;
+
+  const distance = Math.ceil(titleWidth - title.clientWidth);
+  title.style.setProperty('--title-scroll-distance', `-${distance}px`);
+  title.style.setProperty('--title-scroll-duration', `${Math.max(5, distance / 30).toFixed(2)}s`);
+  title.classList.add('scrolling');
+}
+
+function scheduleTitleMarquee() {
+  if (titleMarqueeAnimationFrame !== null) window.cancelAnimationFrame(titleMarqueeAnimationFrame);
+  titleMarqueeAnimationFrame = window.requestAnimationFrame(updateTitleMarquee);
+}
+
+function setTitle(value) {
+  if (titlePrimary.textContent === value) return;
+  titlePrimary.textContent = value;
+  scheduleTitleMarquee();
+}
+
 function update(data) {
   latestData = data;
   if (data.language) window.i18n.setLanguage(data.language);
+  const nextTitleMarqueeEnabled = data.titleMarquee !== false;
+  const titleMarqueeChanged = titleMarqueeEnabled !== nextTitleMarqueeEnabled;
+  titleMarqueeEnabled = nextTitleMarqueeEnabled;
+  if (titleMarqueeChanged) scheduleTitleMarquee();
   if (!data.available) {
     if (!debugMode) {
       card.classList.remove('visible');
       return;
     }
 
-    title.textContent = t('overlay.notDetected');
+    setTitle(t('overlay.notDetected'));
     artist.textContent = data.error || t('overlay.prompt');
     album.textContent = t('overlay.diagnosticHint');
     status.textContent = previewMode ? t('overlay.preview') : t('overlay.diagnostic');
@@ -77,7 +112,7 @@ function update(data) {
     return;
   }
 
-  title.textContent = data.title || t('overlay.unknownTitle');
+  setTitle(data.title || t('overlay.unknownTitle'));
   artist.textContent = data.artist || t('overlay.unknownArtist');
   album.textContent = data.album || '';
   status.textContent = data.playback === 'playing' ? t('overlay.playing') : t('overlay.paused');
@@ -96,7 +131,10 @@ function update(data) {
 
 document.addEventListener('app-language-change', () => {
   if (latestData) update(latestData);
+  else scheduleTitleMarquee();
 });
+
+new ResizeObserver(scheduleTitleMarquee).observe(title);
 
 function refreshCover(data) {
   if (!data.coverUrl || data.coverUrl === previousCoverUrl) return;

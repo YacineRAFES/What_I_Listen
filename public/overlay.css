@@ -116,10 +116,12 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 #cover { display: block; height: 100%; object-fit: cover; width: 100%; }
 
-.text { min-width: 0; }
+.text { flex: 1; min-width: 0; }
 .label { color: #dcaaff; font-size: 12px; font-weight: 750; letter-spacing: .12em; margin-bottom: 6px; text-transform: uppercase; }
 #title, #artist { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #title { color: #fff; font-size: 23px; font-weight: 750; line-height: 1.18; }
+.title-marquee-track { display: inline-flex; min-width: max-content; }
+#title.scrolling .title-marquee-track { animation: title-marquee var(--title-scroll-duration) linear infinite alternate; }
 #artist { color: #d6d0dc; font-size: 16px; margin-top: 6px; }
 #album { color: #948c9d; font-size: 13px; margin-top: 5px; }
 
@@ -155,6 +157,10 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
   45% { opacity: .85; }
   72% { opacity: 0; transform: scale(3.2); }
   100% { opacity: 0; transform: scale(3.2); }
+}
+
+@keyframes title-marquee {
+  to { transform: translateX(var(--title-scroll-distance)); }
 }
 
 #now-playing.paused .status { color: #c7bdcf; }
