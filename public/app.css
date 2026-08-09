@@ -1,0 +1,67 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: #100b18;
+  color: #f9f7ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-width: 650px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 100% 0%, #4b1e77 0, transparent 32%),
+    radial-gradient(circle at 0 100%, #203d70 0, transparent 30%),
+    #100b18;
+}
+
+.app-shell { max-width: 920px; margin: 0 auto; padding: 38px; }
+.app-header, .guide-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.eyebrow { margin: 0 0 5px; color: #c9a8ec; font-size: 12px; font-weight: 800; letter-spacing: .13em; }
+h1, h2, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: clamp(26px, 4vw, 36px); }
+h1 span { color: #c395ee; font-weight: 500; }
+.connection, .guide-badge { border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.connection.checking { background: #3f3650; color: #eee7f9; }
+.connection.ok { background: #174c3d; color: #a9ffe0; }
+.connection.error { background: #602f40; color: #ffd5df; }
+.main-nav { border-bottom: 1px solid rgba(211, 173, 249, .2); display: flex; gap: 7px; margin: 28px 0 0; padding-bottom: 10px; }
+.main-nav a { border-radius: 9px; color: #cbbbdc; font-size: 14px; font-weight: 800; padding: 9px 13px; text-decoration: none; }
+.main-nav a:hover { background: rgba(143, 73, 205, .15); color: #fff; }
+.main-nav a.active { background: #4e2d75; color: #f4eaff; }
+.page-heading { margin: 31px 0 25px; }
+.page-heading h2 { font-size: clamp(28px, 4vw, 38px); margin: 0; }
+.page-heading .intro { color: #d8cee5; font-size: 17px; line-height: 1.55; margin: 12px 0 0; max-width: 650px; }
+
+.track-card, .guide { margin-top: 25px; border: 1px solid rgba(211, 173, 249, .27); border-radius: 18px; background: rgba(25, 16, 38, .84); box-shadow: 0 20px 55px rgba(0, 0, 0, .2); }
+.track-card { display: flex; align-items: center; min-height: 184px; padding: 22px; gap: 24px; }
+.cover { width: 138px; height: 138px; flex: 0 0 auto; border-radius: 13px; object-fit: cover; background: #2e2042; }
+.track-copy { min-width: 0; }
+.playback { margin-bottom: 9px; color: #d4a7ff; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.track-copy h2 { margin-bottom: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(21px, 3vw, 30px); }
+.track-copy p { color: #e0d7ec; font-size: 17px; }
+.track-copy .album { color: #a699ba; font-size: 14px; }
+
+.guide { padding: 25px; }
+.guide h2 { margin-bottom: 0; }
+.guide-badge { background: #4e2d75; color: #eadbff; }
+ol { margin: 23px 0; padding-left: 24px; color: #e5dff0; }
+li { margin: 10px 0; }
+code { font-family: Consolas, monospace; }
+.url-box { display: flex; align-items: center; overflow: hidden; border: 1px solid #7957a3; border-radius: 10px; background: #0e0a15; }
+.url-box code { min-width: 0; flex: 1; padding: 13px 15px; color: #e9d6ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button { margin: 5px; border: 0; border-radius: 7px; padding: 9px 12px; background: #8f49cd; color: white; font: inherit; font-weight: 800; cursor: pointer; }
+button:hover { background: #aa66e6; }
+.hint { margin: 14px 0 0; color: #b8abc9; font-size: 14px; }
+.error { min-height: 20px; margin: 14px 2px 0; color: #ffafc0; }
+
+@media (max-width: 720px) {
+  body { min-width: 0; }
+  .app-shell { padding: 24px; }
+  .track-card { align-items: flex-start; }
+  .cover { width: 100px; height: 100px; }
+  .app-header, .guide-heading { align-items: flex-start; flex-direction: column; }
+  .main-nav { overflow-x: auto; width: 100%; }
+}

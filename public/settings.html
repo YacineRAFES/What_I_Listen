@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Paramètres — What I Listen</title>
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/settings.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">WHAT I LISTEN</p>
+          <h1>What I Listen <span>— Deezer</span></h1>
+        </div>
+      </header>
+
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a href="/app">Accueil</a>
+        <a href="/visualizer">Visualiseur</a>
+        <a class="active" href="/settings">Paramètres</a>
+      </nav>
+
+      <section class="page-heading">
+        <p class="eyebrow">APPLICATION</p>
+        <h2>Paramètres</h2>
+        <p class="intro">Choisis la façon dont What I Listen se comporte lorsque tu le lances.</p>
+      </section>
+
+      <section class="settings-card">
+        <div class="setting-copy">
+          <h3>Démarrer discrètement</h3>
+          <p>Ouvre l’application près de l’horloge Windows. L’overlay OBS fonctionne même si la fenêtre est masquée.</p>
+        </div>
+        <label class="switch" title="Démarrer discrètement">
+          <input id="start-hidden" type="checkbox">
+          <span class="slider"></span>
+        </label>
+      </section>
+
+      <section class="settings-card help-card">
+        <div class="setting-copy">
+          <h3>Quitter l’application</h3>
+          <p>Utilise le clic droit sur l’icône près de l’horloge, puis <strong>Quitter</strong>, pour arrêter le service et l’overlay.</p>
+        </div>
+      </section>
+      <p id="save-status" class="save-status" role="status">Chargement des paramètres…</p>
+    </main>
+    <script src="/settings.js"></script>
+  </body>
+</html>

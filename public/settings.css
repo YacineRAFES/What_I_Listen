@@ -1,0 +1,15 @@
+.settings-card { align-items: center; background: rgba(25, 16, 38, .84); border: 1px solid rgba(211, 173, 249, .27); border-radius: 18px; display: flex; gap: 26px; justify-content: space-between; margin-top: 15px; padding: 24px; }
+.setting-copy h3 { font-size: 19px; margin: 0 0 7px; }
+.setting-copy p { color: #cfc2dd; line-height: 1.45; margin: 0; max-width: 610px; }
+.help-card { margin-top: 14px; }
+.help-card strong { color: #f0e5ff; }
+.switch { cursor: pointer; flex: 0 0 auto; height: 34px; position: relative; width: 60px; }
+.switch input { height: 0; opacity: 0; width: 0; }
+.slider { background: #40324e; border-radius: 999px; inset: 0; position: absolute; transition: background .2s ease; }
+.slider::before { background: #ded3e7; border-radius: 50%; content: ''; height: 26px; left: 4px; position: absolute; top: 4px; transition: transform .2s ease; width: 26px; }
+.switch input:checked + .slider { background: #8850c0; }
+.switch input:checked + .slider::before { background: #fff; transform: translateX(26px); }
+.switch input:focus-visible + .slider { outline: 2px solid #d7a8ff; outline-offset: 3px; }
+.switch input:disabled + .slider { opacity: .55; }
+.save-status { color: #b9ffb2; font-weight: 700; margin: 20px 0 0; min-height: 24px; }
+@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; } }

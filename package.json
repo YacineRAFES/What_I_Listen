@@ -1,0 +1,45 @@
+{
+  "name": "what-i-listen",
+  "version": "0.1.10",
+  "private": true,
+  "license": "MIT",
+  "description": "Application Electron locale pour afficher le morceau Deezer en cours dans OBS.",
+  "type": "module",
+  "main": "electron-main.mjs",
+  "scripts": {
+    "start": "electron .",
+    "start:service": "node src/server.mjs",
+    "check": "node --check electron-main.mjs && node --check src/overlay-service.mjs && node --check src/server.mjs && node --check public/overlay.js && node --check public/app.js && node --check public/visualizer.js && node --check public/settings.js",
+    "dist": "electron-builder --win nsis"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "windows-media-sessions": "1.0.3"
+  },
+  "devDependencies": {
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "fr.whatilisten.deezer",
+    "productName": "What I Listen",
+    "files": [
+      "electron-main.mjs",
+      "src/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}
