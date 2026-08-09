@@ -1,5 +1,7 @@
 const options = [...document.querySelectorAll('.option')];
 const status = document.querySelector('#save-status');
+const previewButton = document.querySelector('#open-preview');
+const audioStatus = document.querySelector('#audio-status');
 const { t } = window.i18n;
 
 let statusKey = 'visualizer.loading';
@@ -29,6 +31,22 @@ async function load() {
   }
 }
 
+async function refreshAudioStatus() {
+  try {
+    const response = await fetch('/api/audio', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const audio = await response.json();
+    const fresh = audio.active && Date.now() - audio.updatedAt < 1500;
+    audioStatus.classList.toggle('error', !fresh);
+    audioStatus.textContent = fresh
+      ? t('visualizer.audio.active')
+      : `${t('visualizer.audio.unavailable')}${audio.error ? ` : ${audio.error}` : '.'}`;
+  } catch {
+    audioStatus.classList.add('error');
+    audioStatus.textContent = t('visualizer.audio.checkError');
+  }
+}
+
 options.forEach((option) => option.addEventListener('click', async () => {
   const mode = option.dataset.mode;
   select(mode);
@@ -47,6 +65,28 @@ options.forEach((option) => option.addEventListener('click', async () => {
   }
 }));
 
-document.addEventListener('app-language-change', () => setStatus(statusKey));
+previewButton.addEventListener('click', async () => {
+  if (!window.whatIListen?.openPreview) {
+    setStatus('visualizer.preview.unavailable');
+    return;
+  }
+
+  previewButton.disabled = true;
+  try {
+    await window.whatIListen.openPreview();
+    setStatus('visualizer.preview.opened');
+  } catch {
+    setStatus('visualizer.preview.error');
+  } finally {
+    previewButton.disabled = false;
+  }
+});
+
+document.addEventListener('app-language-change', () => {
+  setStatus(statusKey);
+  refreshAudioStatus();
+});
 
 load();
+refreshAudioStatus();
+setInterval(refreshAudioStatus, 2000);

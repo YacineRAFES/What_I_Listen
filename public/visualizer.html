@@ -28,6 +28,14 @@
         <p class="intro" data-i18n="visualizer.intro">Choisis le mouvement décoratif affiché derrière les informations du morceau dans OBS.</p>
       </section>
 
+      <section class="live-preview" data-i18n-aria-label="visualizer.preview.title" aria-label="Aperçu en direct">
+        <div>
+          <h3 data-i18n="visualizer.preview.title">Aperçu en direct</h3>
+          <p data-i18n="visualizer.preview.description">Ouvre une petite fenêtre qui reproduit exactement la source Navigateur OBS. Elle se met à jour dès que tu modifies le visuel.</p>
+        </div>
+        <button id="open-preview" type="button" data-i18n="visualizer.preview.open">Ouvrir l’aperçu</button>
+      </section>
+
       <section class="options" data-i18n-aria-label="visualizer.optionsLabel" aria-label="Choix du visualiseur">
         <button class="option" type="button" data-mode="bars">
           <span class="preview bars"><i></i><i></i><i></i><i></i><i></i></span>
@@ -48,7 +56,8 @@
       </section>
 
       <p id="save-status" class="save-status" role="status" data-i18n="visualizer.loading">Chargement du choix actuel…</p>
-      <p class="note" data-i18n="visualizer.note">Ce sont des animations décoratives : elles suivent l’état lecture/pause, pas le rythme audio réel.</p>
+      <p class="note" data-i18n="visualizer.note">Le visualiseur analyse le son qui sort de Windows, puis l’envoie en direct à l’overlay OBS. Pour un résultat fidèle, évite de jouer d’autres sons en même temps que Deezer.</p>
+      <p id="audio-status" class="audio-status" role="status" data-i18n="visualizer.audio.checking">Vérification de la synchronisation audio…</p>
     </main>
     <script src="/i18n.js"></script>
     <script src="/visualizer.js"></script>

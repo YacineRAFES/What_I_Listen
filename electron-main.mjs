@@ -1,8 +1,15 @@
-import { app, BrowserWindow, dialog, Menu, nativeImage, Tray } from 'electron';
-import { join } from 'node:path';
+import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, Menu, nativeImage, screen, session, Tray } from 'electron';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { startOverlayService } from './src/overlay-service.mjs';
 
+const projectDirectory = dirname(fileURLToPath(import.meta.url));
+const preloadPath = join(projectDirectory, 'preload.cjs');
+const audioCapturePreloadPath = join(projectDirectory, 'src', 'audio-capture-preload.cjs');
+
 let mainWindow = null;
+let previewWindow = null;
+let audioCaptureWindow = null;
 let overlayService = null;
 let tray = null;
 let isQuitting = false;
@@ -11,11 +18,13 @@ const nativeTranslations = {
   fr: {
     windowTitle: 'What I Listen — Deezer',
     show: 'Afficher What I Listen',
+    preview: 'Ouvrir l’aperçu en direct',
     quit: 'Quitter',
   },
   en: {
     windowTitle: 'What I Listen — Deezer',
     show: 'Show What I Listen',
+    preview: 'Open live preview',
     quit: 'Quit',
   },
 };
@@ -23,6 +32,8 @@ const nativeTranslations = {
 function nativeText(key, language = 'fr') {
   return (nativeTranslations[language] ?? nativeTranslations.fr)[key];
 }
+
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 function showMainWindow() {
   if (!mainWindow) return createWindow({ showOnReady: true });
@@ -45,6 +56,7 @@ function createWindow({ showOnReady = false } = {}) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      preload: preloadPath,
     },
   });
 
@@ -60,11 +72,95 @@ function createWindow({ showOnReady = false } = {}) {
   return mainWindow.loadURL(`${overlayService.url}app`);
 }
 
+async function getPrimaryScreenSource() {
+  const primaryDisplayId = String(screen.getPrimaryDisplay().id);
+  const sources = await desktopCapturer.getSources({ types: ['screen'] });
+  return sources.find((source) => source.display_id === primaryDisplayId) ?? sources[0] ?? null;
+}
+
+function configureAudioCapture() {
+  session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
+    try {
+      const source = await getPrimaryScreenSource();
+      if (!source) throw new Error('Aucun écran Windows n’est disponible pour la capture audio.');
+      callback({ video: source, audio: 'loopback' });
+    } catch (error) {
+      overlayService?.setAudioCaptureError(error.message);
+      callback({});
+    }
+  }, { useSystemPicker: false });
+
+  ipcMain.handle('audio-capture:source-id', async () => {
+    const source = await getPrimaryScreenSource();
+    if (!source) throw new Error('Aucun écran Windows n’est disponible pour la capture audio.');
+    return source.id;
+  });
+  ipcMain.on('audio-capture:levels', (_event, levels) => {
+    overlayService?.updateAudioLevels(levels);
+  });
+  ipcMain.on('audio-capture:error', (_event, message) => {
+    overlayService?.setAudioCaptureError(message);
+  });
+}
+
+function createAudioCaptureWindow() {
+  if (audioCaptureWindow) return Promise.resolve();
+
+  audioCaptureWindow = new BrowserWindow({
+    show: false,
+    skipTaskbar: true,
+    webPreferences: {
+      backgroundThrottling: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: audioCapturePreloadPath,
+      sandbox: true,
+    },
+  });
+  audioCaptureWindow.on('closed', () => {
+    audioCaptureWindow = null;
+    if (!isQuitting) overlayService?.setAudioCaptureError('La fenêtre de capture audio a été fermée.');
+  });
+  return audioCaptureWindow.loadURL(`${overlayService.url}audio-capture`);
+}
+
+async function showPreviewWindow() {
+  if (!overlayService) throw new Error('Le service local n’est pas encore prêt.');
+
+  if (previewWindow) {
+    if (previewWindow.isMinimized()) previewWindow.restore();
+    previewWindow.show();
+    previewWindow.focus();
+    return;
+  }
+
+  previewWindow = new BrowserWindow({
+    width: 520,
+    height: 130,
+    useContentSize: true,
+    resizable: false,
+    maximizable: false,
+    title: 'Aperçu — What I Listen',
+    backgroundColor: '#100b18',
+    webPreferences: {
+      backgroundThrottling: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: preloadPath,
+    },
+  });
+  previewWindow.setMenuBarVisibility(false);
+  previewWindow.on('closed', () => { previewWindow = null; });
+  await previewWindow.loadURL(`${overlayService.url}?debug&preview`);
+}
+
 function updateTray(language) {
   if (!tray) return;
   tray.setToolTip(nativeText('windowTitle', language));
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: nativeText('show', language), click: () => { void showMainWindow(); } },
+    { label: nativeText('preview', language), click: () => { void showPreviewWindow(); } },
     { type: 'separator' },
     { label: nativeText('quit', language), click: () => app.quit() },
   ]));
@@ -80,6 +176,7 @@ function createTray(language) {
 
 app.whenReady().then(async () => {
   app.setName('What I Listen');
+  ipcMain.handle('what-i-listen:open-preview', () => showPreviewWindow());
   const backendPath = app.isPackaged
     ? join(
         process.resourcesPath,
@@ -95,7 +192,9 @@ app.whenReady().then(async () => {
     backendPath,
     settingsPath: join(app.getPath('userData'), 'overlay-settings.json'),
   });
+  configureAudioCapture();
   await createWindow({ showOnReady: !overlayService.settings().startHidden });
+  await createAudioCaptureWindow();
   createTray(overlayService.settings().language);
   overlayService.onSettingsChanged(({ language }) => updateTray(language));
 
@@ -111,5 +210,6 @@ app.on('before-quit', (event) => {
   if (isQuitting || !overlayService) return;
   isQuitting = true;
   event.preventDefault();
+  audioCaptureWindow?.destroy();
   overlayService.close().finally(() => app.exit(0));
 });

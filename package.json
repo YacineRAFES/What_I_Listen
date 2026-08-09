@@ -9,24 +9,27 @@
   "scripts": {
     "start": "electron .",
     "start:service": "node src/server.mjs",
-    "check": "node --check electron-main.mjs && node --check src/overlay-service.mjs && node --check src/server.mjs && node --check public/i18n.js && node --check public/overlay.js && node --check public/app.js && node --check public/visualizer.js && node --check public/settings.js",
-    "dist": "electron-builder --win nsis"
+    "check": "node --check electron-main.mjs && node --check preload.cjs && node --check src/audio-capture-preload.cjs && node --check src/overlay-service.mjs && node --check src/server.mjs && node --check public/i18n.js && node --check public/audio-capture.js && node --check public/overlay.js && node --check public/app.js && node --check public/visualizer.js && node --check public/settings.js",
+    "dist": "electron-builder --win nsis",
+    "release": "release-it"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "dependencies": {
     "windows-media-sessions": "1.0.3"
   },
   "devDependencies": {
     "electron": "43.2.0",
-    "electron-builder": "26.15.3"
+    "electron-builder": "26.15.3",
+    "release-it": "^20.0.0"
   },
   "build": {
     "appId": "fr.whatilisten.deezer",
     "productName": "What I Listen",
     "files": [
       "electron-main.mjs",
+      "preload.cjs",
       "src/**/*",
       "public/**/*",
       "package.json"
