@@ -8,6 +8,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
 const visualizerModes = new Set(['bars', 'ripple', 'pulse', 'off']);
 const defaultSettings = Object.freeze({ visualizer: 'bars', startHidden: true });
+const audioBandCount = 16;
 
 function parsePort(raw, fallback) {
   const value = Number.parseInt(raw ?? '', 10);
@@ -20,6 +21,21 @@ function escapeXml(value) {
 
 function normalizeVisualizer(value) {
   return visualizerModes.has(value) ? value : 'bars';
+}
+
+function normalizeAudioLevels(value) {
+  if (!value || !Array.isArray(value.bands)) return null;
+
+  const bands = Array.from({ length: audioBandCount }, (_, index) => {
+    const level = Number(value.bands[index]);
+    return Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0;
+  });
+  const suppliedLevel = Number(value.level);
+  const level = Number.isFinite(suppliedLevel)
+    ? Math.min(1, Math.max(0, suppliedLevel))
+    : bands.reduce((total, band) => total + band, 0) / bands.length;
+
+  return { bands, level };
 }
 
 async function loadSettings(settingsPath) {
@@ -73,11 +89,19 @@ export async function startOverlayService({
     thumbnail: '',
     visualizer: savedSettings.visualizer,
     startHidden: savedSettings.startHidden,
+    audio: {
+      active: false,
+      bands: Array(audioBandCount).fill(0),
+      level: 0,
+      updatedAt: 0,
+      error: '',
+    },
     version: 0,
     error: '',
   };
 
   const manager = createSessionManager(backendPath ? { backendPath } : undefined);
+  const audioSubscribers = new Set();
   let stopListening = () => {};
   let isListening = false;
 
@@ -142,6 +166,45 @@ export async function startOverlayService({
       visualizer: state.visualizer,
       startHidden: state.startHidden,
     };
+  }
+
+  function audioForClient() {
+    return {
+      active: state.audio.active,
+      bands: state.audio.bands,
+      level: state.audio.level,
+      updatedAt: state.audio.updatedAt,
+      error: state.audio.error || undefined,
+    };
+  }
+
+  function notifyAudioSubscribers() {
+    const message = `event: levels\ndata: ${JSON.stringify(audioForClient())}\n\n`;
+    for (const response of audioSubscribers) {
+      response.write(message);
+    }
+  }
+
+  function updateAudioLevels(value) {
+    const levels = normalizeAudioLevels(value);
+    if (!levels) return false;
+
+    Object.assign(state.audio, levels, {
+      active: true,
+      updatedAt: Date.now(),
+      error: '',
+    });
+    notifyAudioSubscribers();
+    return true;
+  }
+
+  function setAudioCaptureError(error) {
+    state.audio.active = false;
+    state.audio.error = String(error || 'La capture audio a été interrompue.').slice(0, 300);
+    state.audio.bands = Array(audioBandCount).fill(0);
+    state.audio.level = 0;
+    state.audio.updatedAt = Date.now();
+    notifyAudioSubscribers();
   }
 
   async function saveSettings() {
@@ -217,6 +280,18 @@ export async function startOverlayService({
       }
       return;
     }
+    if (request.method === 'GET' && url.pathname === '/api/audio-stream') {
+      response.writeHead(200, {
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      response.write(`retry: 2000\nevent: levels\ndata: ${JSON.stringify(audioForClient())}\n\n`);
+      audioSubscribers.add(response);
+      request.on('close', () => audioSubscribers.delete(response));
+      return;
+    }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       send(response, 405, 'text/plain; charset=utf-8', 'Méthode non autorisée.');
       return;
@@ -237,6 +312,13 @@ export async function startOverlayService({
         break;
       case '/overlay.js':
         await sendStatic(response, 'overlay.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/audio-capture':
+      case '/audio-capture.html':
+        await sendStatic(response, 'audio-capture.html', 'text/html; charset=utf-8');
+        break;
+      case '/audio-capture.js':
+        await sendStatic(response, 'audio-capture.js', 'text/javascript; charset=utf-8');
         break;
       case '/app':
       case '/app.html':
@@ -284,6 +366,9 @@ export async function startOverlayService({
       case '/api/settings':
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(settingsForClient()));
         break;
+      case '/api/audio':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(audioForClient()));
+        break;
       default:
         if (url.pathname === '/cover' || /^\/cover\/\d+$/.test(url.pathname)) {
           sendCover(response);
@@ -319,8 +404,12 @@ export async function startOverlayService({
     url: `http://${host}:${port}/`,
     state: stateForClient,
     settings: settingsForClient,
+    updateAudioLevels,
+    setAudioCaptureError,
     async close() {
       stopListening();
+      for (const response of audioSubscribers) response.end();
+      audioSubscribers.clear();
       if (isListening) {
         await new Promise((resolve) => server.close(resolve));
         isListening = false;

@@ -34,7 +34,7 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
   display: none;
   gap: 5px;
   height: 98px;
-  opacity: .22;
+  opacity: var(--audio-opacity, .22);
   pointer-events: none;
   position: absolute;
   right: 18px;
@@ -46,23 +46,14 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing[data-visualizer="bars"] .equalizer { display: flex; }
 
 .equalizer span {
-  animation: equalizer-wave 1.35s ease-in-out infinite alternate;
   background: linear-gradient(to top, rgba(121, 255, 146, .1), rgba(180, 255, 129, .9));
   border-radius: 999px;
   box-shadow: 0 0 13px rgba(170, 255, 125, .45);
   height: 28px;
-  transform-origin: bottom;
+  transform: scaleY(var(--bar-level, .08));
+  transform-origin: bottom center;
+  transition: transform .07s ease-out;
   width: 5px;
-}
-
-.equalizer span:nth-child(2n) { animation-delay: -.68s; animation-duration: 1.7s; }
-.equalizer span:nth-child(3n) { animation-delay: -1.08s; animation-duration: 1.1s; }
-.equalizer span:nth-child(4n) { animation-delay: -.36s; animation-duration: 1.95s; }
-
-@keyframes equalizer-wave {
-  0% { transform: scaleY(.35); }
-  35% { transform: scaleY(.72); }
-  100% { transform: scaleY(1.35); }
 }
 
 .visual-ripples {
@@ -80,28 +71,22 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing[data-visualizer="ripple"] .visual-ripples { display: block; }
 
 .visual-ripples i {
-  animation: ripple-wave 3.4s ease-out infinite;
   border: 2px solid rgba(170, 255, 125, .62);
   border-radius: 50%;
   height: 50px;
   left: 78px;
-  opacity: 0;
+  opacity: var(--ripple-opacity, .12);
   position: absolute;
   top: 56px;
+  transition: opacity .1s ease-out, transform .08s ease-out;
   width: 50px;
 }
 
-.visual-ripples i:nth-child(2) { animation-delay: -1.13s; }
-.visual-ripples i:nth-child(3) { animation-delay: -2.26s; }
-
-@keyframes ripple-wave {
-  0% { opacity: 0; transform: scale(.2); }
-  13% { opacity: .7; }
-  72%, 100% { opacity: 0; transform: scale(3.9); }
-}
+.visual-ripples i:nth-child(1) { transform: scale(var(--ripple-scale-1, .35)); }
+.visual-ripples i:nth-child(2) { opacity: var(--ripple-opacity-2, .09); transform: scale(var(--ripple-scale-2, .8)); }
+.visual-ripples i:nth-child(3) { opacity: var(--ripple-opacity-3, .05); transform: scale(var(--ripple-scale-3, 1.2)); }
 
 .visual-orb {
-  animation: orb-breathe 2.65s ease-in-out infinite;
   background: radial-gradient(circle, rgba(185, 255, 128, .35), rgba(110, 255, 151, .13) 36%, transparent 70%);
   border-radius: 50%;
   display: none;
@@ -111,17 +96,15 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
   position: absolute;
   right: -20px;
   top: -22px;
+  opacity: var(--pulse-opacity, .16);
+  transform: scale(var(--pulse-scale, .72));
   transform-origin: center;
+  transition: opacity .1s ease-out, transform .08s ease-out;
   width: 175px;
   z-index: 0;
 }
 
 #now-playing[data-visualizer="pulse"] .visual-orb { display: block; }
-
-@keyframes orb-breathe {
-  0%, 100% { opacity: .16; transform: scale(.72); }
-  50% { opacity: .72; transform: scale(1.2); }
-}
 
 .cover-wrap {
   background: radial-gradient(circle at 30% 25%, #9e4de7, #32125a 72%);
@@ -176,5 +159,4 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 #now-playing.paused .status { color: #c7bdcf; }
 #now-playing.paused .dot, #now-playing.paused .dot::after { animation: none; box-shadow: none; }
-#now-playing.paused .equalizer { animation-play-state: paused; opacity: .08; }
-#now-playing.paused .equalizer span, #now-playing.paused .visual-ripples i, #now-playing.paused .visual-orb { animation-play-state: paused; }
+#now-playing.paused .equalizer { opacity: .08; }
