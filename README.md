@@ -52,18 +52,3 @@ Le code est écrit en TypeScript et compilé dans `.build` avant chaque démarra
 ```powershell
 npm.cmd run check
 ```
-
-## Publier une release GitHub
-
-`release-it` incrémente la version, valide le code, construit l’installateur, crée puis pousse le commit et le tag, et publie une release GitHub contenant le fichier `.exe`. La publication sur npm est désactivée.
-
-La commande demande Node 20.19 ou une version plus récente.
-
-Crée un jeton d’accès GitHub ayant l’autorisation de créer des releases, puis fournis-le uniquement pour la session PowerShell en cours :
-
-```powershell
-$env:GITHUB_TOKEN = "github_pat_..."
-npm.cmd run release
-```
-
-La commande est interactive et propose la prochaine version. Sans `GITHUB_TOKEN`, `release-it` ouvre la page GitHub de création de release avec les champs préremplis ; le commit et le tag sont tout de même poussés automatiquement.
