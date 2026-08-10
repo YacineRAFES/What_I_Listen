@@ -3,3 +3,5 @@ npm-debug.log*
 dist/
 .build/
 .idea/
+.idea/workspace.xml
+.release-it.json
