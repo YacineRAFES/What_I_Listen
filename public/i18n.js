@@ -224,9 +224,10 @@
   function setLanguage(nextLanguage) {
     if (!isSupported(nextLanguage)) return false;
     const changed = language !== nextLanguage;
+    if (!changed) return true;
     language = nextLanguage;
     apply();
-    if (changed) announceChange();
+    announceChange();
     return true;
   }
 

@@ -2,6 +2,7 @@ const card = document.querySelector('#now-playing');
 const cover = document.querySelector('#cover');
 const title = document.querySelector('#title');
 const titlePrimary = document.querySelector('#title-primary');
+const titleDuplicate = document.querySelector('#title-duplicate');
 const artist = document.querySelector('#artist');
 const album = document.querySelector('#album');
 const status = document.querySelector('#status');
@@ -64,15 +65,20 @@ function updateTitleMarquee() {
   title.classList.remove('scrolling');
   title.style.removeProperty('--title-scroll-distance');
   title.style.removeProperty('--title-scroll-duration');
+  title.style.removeProperty('--title-scroll-gap');
+  titleDuplicate.textContent = '';
 
   if (!titleMarqueeEnabled || title.clientWidth === 0) return;
 
   const titleWidth = titlePrimary.getBoundingClientRect().width;
   if (titleWidth <= title.clientWidth + 1) return;
 
-  const distance = Math.ceil(titleWidth - title.clientWidth);
+  const gap = 48;
+  const distance = Math.ceil(titleWidth + gap);
+  titleDuplicate.textContent = titlePrimary.textContent;
+  title.style.setProperty('--title-scroll-gap', `${gap}px`);
   title.style.setProperty('--title-scroll-distance', `-${distance}px`);
-  title.style.setProperty('--title-scroll-duration', `${Math.max(5, distance / 30).toFixed(2)}s`);
+  title.style.setProperty('--title-scroll-duration', `${Math.max(8, distance / 30).toFixed(2)}s`);
   title.classList.add('scrolling');
 }
 
