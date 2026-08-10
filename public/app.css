@@ -27,6 +27,7 @@ h1 span { color: #c395ee; font-weight: 500; }
 .connection.checking { background: #3f3650; color: #eee7f9; }
 .connection.ok { background: #174c3d; color: #a9ffe0; }
 .connection.error { background: #602f40; color: #ffd5df; }
+.preview-button { margin: 0; white-space: nowrap; }
 .main-nav { border-bottom: 1px solid rgba(211, 173, 249, .2); display: flex; gap: 7px; margin: 28px 0 0; padding-bottom: 10px; }
 .main-nav a { border-radius: 9px; color: #cbbbdc; font-size: 14px; font-weight: 800; padding: 9px 13px; text-decoration: none; }
 .main-nav a:hover { background: rgba(143, 73, 205, .15); color: #fff; }

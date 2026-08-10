@@ -18,7 +18,6 @@
 
       <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
         <a href="/app" data-i18n="nav.home">Accueil</a>
-        <a href="/visualizer" data-i18n="nav.visualizer">Visualiseur</a>
         <a class="active" href="/settings" data-i18n="nav.settings">Paramètres</a>
       </nav>
 
@@ -50,6 +49,36 @@
         </label>
       </section>
 
+      <section class="settings-card skin-card">
+        <div class="setting-copy">
+          <h3 data-i18n="settings.skin.title">Style de l’overlay</h3>
+          <p data-i18n="settings.skin.description">Choisis l’habillage affiché dans OBS. Le changement est immédiat dans l’aperçu et dans OBS.</p>
+        </div>
+        <fieldset class="skin-options" data-i18n-aria-label="settings.skin.title" aria-label="Style de l’overlay">
+          <legend class="sr-only" data-i18n="settings.skin.title">Style de l’overlay</legend>
+          <label class="skin-option" data-skin-option="luna">
+            <input type="radio" name="skin" value="luna">
+            <span class="skin-preview luna-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.luna">Luna</strong><small data-i18n="settings.skin.lunaDescription">Bleu Windows XP, brillant et nostalgique.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="aura">
+            <input type="radio" name="skin" value="aura">
+            <span class="skin-preview aura-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.aura">Aura</strong><small data-i18n="settings.skin.auraDescription">Le style sombre et lumineux original.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="winamp">
+            <input type="radio" name="skin" value="winamp">
+            <span class="skin-preview winamp-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.winamp">Winamp Classic</strong><small data-i18n="settings.skin.winampDescription">Métal, afficheur vert et esprit lecteur MP3.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="glass">
+            <input type="radio" name="skin" value="glass">
+            <span class="skin-preview glass-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.glass">Glass</strong><small data-i18n="settings.skin.glassDescription">Verre bleuté et lecteur Windows aérien.</small></span>
+          </label>
+        </fieldset>
+      </section>
+
       <section class="settings-card language-card">
         <div class="setting-copy">
           <h3 data-i18n="settings.language.title">Langue de l’application</h3>
@@ -72,7 +101,7 @@
       </section>
       <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des paramètres…</p>
     </main>
-    <script src="/i18n.js"></script>
-    <script src="/settings.js"></script>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/settings.js"></script>
   </body>
 </html>

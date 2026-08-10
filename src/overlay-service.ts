@@ -1,0 +1,656 @@
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { createSessionManager } from 'windows-media-sessions';
+
+const root = dirname(fileURLToPath(import.meta.url));
+const publicDirectory = join(root, '..', 'public');
+const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura']);
+const supportedLanguages = new Set(['fr', 'en']);
+const defaultSettings = Object.freeze({ skin: 'luna', startHidden: true, titleMarquee: true, language: 'fr' } satisfies OverlaySettings);
+const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.freeze({
+  luna: 'bars',
+  winamp: 'spectrum',
+  glass: 'ripple',
+  aura: 'pulse',
+});
+const audioBandCount = 16;
+const coverRefreshDelayMs = 5000;
+const deezerSearchUrl = 'https://api.deezer.com/search/track';
+const deezerRequestTimeoutMs = 6000;
+const maxCoverBytes = 5 * 1024 * 1024;
+
+export interface StartOverlayOptions {
+  host?: string;
+  port?: number;
+  mediaAppFilter?: string;
+  backendPath?: string;
+  settingsPath?: string;
+}
+
+export interface OverlayService {
+  host: string;
+  port: number;
+  url: string;
+  state(): NowPlayingData;
+  settings(): OverlaySettings;
+  updateAudioLevels(value: unknown): boolean;
+  setAudioCaptureError(error: unknown): void;
+  onSettingsChanged(listener: (settings: OverlaySettings) => void): () => boolean;
+  close(): Promise<void>;
+}
+
+interface AudioState extends AudioLevels {
+  active: boolean;
+  updatedAt: number;
+  error: string;
+}
+
+interface ServiceState extends OverlaySettings {
+  visualizer: VisualizerMode;
+  available: boolean;
+  title: string;
+  artist: string;
+  album: string;
+  playback: string;
+  source: string;
+  thumbnail: string;
+  audio: AudioState;
+  version: number;
+  error: string;
+}
+
+type SettingsUpdate = Partial<OverlaySettings>;
+
+interface DeezerTrackResult {
+  title: string;
+  artist: string;
+  album: string;
+  coverUrl: string;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function parsePort(raw: unknown, fallback: number): number {
+  const value = Number.parseInt(typeof raw === 'string' ? raw : '', 10);
+  return Number.isInteger(value) && value > 0 && value < 65536 ? value : fallback;
+}
+
+function escapeXml(value: string): string {
+  const entities: Record<string, string> = { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' };
+  return value.replace(/[<>&'"]/g, (character) => entities[character] ?? character);
+}
+
+function normalizeMediaText(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLocaleLowerCase('fr')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, ' ')
+    .trim();
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function stringValue(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function parseDeezerResults(value: unknown): DeezerTrackResult[] {
+  const payload = recordValue(value);
+  if (!payload || !Array.isArray(payload.data)) return [];
+
+  return payload.data.flatMap((candidate) => {
+    const track = recordValue(candidate);
+    if (!track) return [];
+    const artist = stringValue(recordValue(track.artist)?.name);
+    const album = recordValue(track.album);
+    const coverUrl = stringValue(album?.cover_xl)
+      || stringValue(album?.cover_big)
+      || stringValue(album?.cover_medium);
+    const title = stringValue(track.title);
+    if (!title || !artist || !coverUrl || !coverUrl.startsWith('https://')) return [];
+    return [{ title, artist, album: stringValue(album?.title), coverUrl }];
+  });
+}
+
+function deezerMatchScore(track: DeezerTrackResult, title: string, artist: string, album: string): number {
+  const expectedTitle = normalizeMediaText(title);
+  const expectedArtist = normalizeMediaText(artist);
+  const expectedAlbum = normalizeMediaText(album);
+  const actualTitle = normalizeMediaText(track.title);
+  const actualArtist = normalizeMediaText(track.artist);
+  const actualAlbum = normalizeMediaText(track.album);
+
+  let score = 0;
+  if (actualTitle === expectedTitle) score += 6;
+  else if (actualTitle.includes(expectedTitle) || expectedTitle.includes(actualTitle)) score += 4;
+  if (actualArtist === expectedArtist) score += 6;
+  else if (actualArtist.includes(expectedArtist) || expectedArtist.includes(actualArtist)) score += 4;
+  if (expectedAlbum && actualAlbum === expectedAlbum) score += 2;
+  return score;
+}
+
+function normalizeSkin(value: unknown): OverlaySkin {
+  return typeof value === 'string' && overlaySkins.has(value) ? value as OverlaySkin : defaultSettings.skin;
+}
+
+function normalizeLanguage(value: unknown): 'fr' | 'en' {
+  return typeof value === 'string' && supportedLanguages.has(value) ? value as 'fr' | 'en' : defaultSettings.language;
+}
+
+function normalizeAudioLevels(value: unknown): AudioLevels | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<AudioLevels>;
+  if (!Array.isArray(candidate.bands)) return null;
+
+  const bands = Array.from({ length: audioBandCount }, (_, index) => {
+    const level = Number(candidate.bands![index]);
+    return Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0;
+  });
+  const suppliedLevel = Number(candidate.level);
+  const level = Number.isFinite(suppliedLevel)
+    ? Math.min(1, Math.max(0, suppliedLevel))
+    : bands.reduce((total, band) => total + band, 0) / bands.length;
+
+  return { bands, level };
+}
+
+async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
+  if (!settingsPath) return { ...defaultSettings };
+  try {
+    const settings = JSON.parse(await readFile(settingsPath, 'utf8')) as SettingsUpdate;
+    return {
+      skin: normalizeSkin(settings.skin),
+      startHidden: typeof settings.startHidden === 'boolean' ? settings.startHidden : defaultSettings.startHidden,
+      titleMarquee: typeof settings.titleMarquee === 'boolean' ? settings.titleMarquee : defaultSettings.titleMarquee,
+      language: normalizeLanguage(settings.language),
+    };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn(`Paramètres du visualiseur ignorés : ${errorMessage(error)}`);
+    return { ...defaultSettings };
+  }
+}
+
+function readJsonBody(request: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise<Record<string, unknown>>((resolve, reject) => {
+    let body = '';
+    request.setEncoding('utf8');
+    request.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 2048) request.destroy(new Error('Requête trop volumineuse.'));
+    });
+    request.on('error', reject);
+    request.on('end', () => {
+      try {
+        const payload = JSON.parse(body);
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('JSON invalide.');
+        resolve(payload as Record<string, unknown>);
+      } catch {
+        reject(new Error('JSON invalide.'));
+      }
+    });
+  });
+}
+
+export async function startOverlayService({
+  host = '127.0.0.1',
+  port = parsePort(process.env.PORT, 38491),
+  mediaAppFilter = (process.env.MEDIA_APP ?? 'deezer').trim().toLowerCase(),
+  backendPath,
+  settingsPath,
+}: StartOverlayOptions = {}): Promise<OverlayService> {
+  const savedSettings = await loadSettings(settingsPath);
+  const state: ServiceState = {
+    available: false,
+    title: '',
+    artist: '',
+    album: '',
+    playback: 'stopped',
+    source: '',
+    thumbnail: '',
+    visualizer: visualizerForSkin[savedSettings.skin],
+    skin: savedSettings.skin,
+    startHidden: savedSettings.startHidden,
+    titleMarquee: savedSettings.titleMarquee,
+    language: savedSettings.language,
+    audio: {
+      active: false,
+      bands: Array(audioBandCount).fill(0),
+      level: 0,
+      updatedAt: 0,
+      error: '',
+    },
+    version: 0,
+    error: '',
+  };
+
+  const manager = createSessionManager(backendPath ? { backendPath } : undefined);
+  const audioSubscribers = new Set<ServerResponse>();
+  let stopListening = () => {};
+  let isListening = false;
+  let trackKey = '';
+  let thumbnailAwaitingRefresh = false;
+  let deezerCoverTrackKey = '';
+  const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
+  const deezerLookupTrackKeys = new Set<string>();
+  const settingsListeners = new Set<(settings: OverlaySettings) => void>();
+
+  async function findDeezerCover(title: string, artist: string, album: string): Promise<string> {
+    const searchUrl = new URL(deezerSearchUrl);
+    searchUrl.searchParams.set('q', `artist:"${artist}" track:"${title}"`);
+    searchUrl.searchParams.set('limit', '5');
+
+    const searchResponse = await fetch(searchUrl, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(deezerRequestTimeoutMs),
+    });
+    if (!searchResponse.ok) throw new Error(`Recherche Deezer indisponible (${searchResponse.status}).`);
+
+    const candidates = parseDeezerResults(await searchResponse.json())
+      .map((track) => ({ track, score: deezerMatchScore(track, title, artist, album) }))
+      .filter(({ score }) => score >= 8)
+      .sort((left, right) => right.score - left.score);
+    const match = candidates[0]?.track;
+    if (!match) return '';
+
+    const coverResponse = await fetch(match.coverUrl, {
+      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1' },
+      signal: AbortSignal.timeout(deezerRequestTimeoutMs),
+    });
+    if (!coverResponse.ok) throw new Error(`Pochette Deezer indisponible (${coverResponse.status}).`);
+
+    const contentType = coverResponse.headers.get('content-type')?.split(';', 1)[0]?.toLowerCase() ?? '';
+    if (!/^image\/(avif|jpeg|png|webp)$/.test(contentType)) throw new Error('Format de pochette Deezer non pris en charge.');
+    const image = Buffer.from(await coverResponse.arrayBuffer());
+    if (!image.length || image.length > maxCoverBytes) throw new Error('Taille de pochette Deezer invalide.');
+    return `data:${contentType};base64,${image.toString('base64')}`;
+  }
+
+  function requestDeezerCoverFallback(expectedTrackKey: string): void {
+    if (deezerLookupTrackKeys.has(expectedTrackKey) || !state.title || !state.artist) return;
+    deezerLookupTrackKeys.add(expectedTrackKey);
+
+    const { title, artist, album } = state;
+    void findDeezerCover(title, artist, album)
+      .then((thumbnail) => {
+        if (!thumbnail || trackKey !== expectedTrackKey || !thumbnailAwaitingRefresh) return;
+        state.thumbnail = thumbnail;
+        thumbnailAwaitingRefresh = false;
+        deezerCoverTrackKey = expectedTrackKey;
+        state.version += 1;
+      })
+      .catch((error: unknown) => console.warn(`Pochette Deezer ignorée : ${errorMessage(error)}`));
+  }
+
+  function refreshMetadataAfterTrackChange(expectedTrackKey: string): void {
+    for (const delay of [coverRefreshDelayMs]) {
+      const timer = setTimeout(() => {
+        pendingMetadataRefreshes.delete(timer);
+        if (trackKey === expectedTrackKey && thumbnailAwaitingRefresh) requestDeezerCoverFallback(expectedTrackKey);
+      }, delay);
+      pendingMetadataRefreshes.add(timer);
+    }
+  }
+
+  function matchesConfiguredApp(session: import('windows-media-sessions').MediaSession): boolean {
+    const appId = String(session.sourceAppUserModelId ?? '').toLowerCase();
+    const appName = String(session.sourceAppDisplayName ?? '').toLowerCase();
+    return appId.includes(mediaAppFilter) || appName.includes(mediaAppFilter);
+  }
+
+  function chooseSession(sessions: import('windows-media-sessions').MediaSession[]) {
+    const candidates = sessions.filter(matchesConfiguredApp);
+    const playing = sessions.filter((session) => session.playbackStatus === 'playing');
+
+    // Deezer joué dans un navigateur est souvent publié par Windows sous le nom
+    // du navigateur. On privilégie toujours Deezer, mais une session en lecture
+    // reste un meilleur résultat que l’absence totale de morceau.
+    return candidates.find((session) => session.playbackStatus === 'playing')
+      ?? candidates[0]
+      ?? playing.find((session) => Boolean(session.title || session.artist))
+      ?? playing[0]
+      ?? null;
+  }
+
+  function updateState(sessions: import('windows-media-sessions').MediaSession[]): void {
+    const session = chooseSession(sessions);
+    const next = session
+      ? {
+          available: Boolean(session.title || session.artist),
+          title: session.title ?? '',
+          artist: session.artist ?? '',
+          album: session.albumTitle ?? '',
+          playback: session.playbackStatus,
+          source: session.sourceAppDisplayName || session.sourceAppUserModelId || 'Deezer',
+          thumbnail: session.thumbnail ?? '',
+          error: '',
+        }
+      : {
+          available: false,
+          title: '',
+          artist: '',
+          album: '',
+          playback: 'stopped',
+          source: '',
+          thumbnail: '',
+          error: '',
+        };
+
+    const nextTrackKey = [next.source, next.title, next.artist, next.album].join('\u001f');
+    const trackChanged = nextTrackKey !== trackKey;
+    // Deezer publie parfois une miniature avec une piste de retard. Après un
+    // changement de titre, la pochette Windows est donc ignorée : le secours
+    // Deezer, déclenché cinq secondes plus tard, fournit l'image associée au
+    // titre courant.
+    if (trackChanged) {
+      trackKey = nextTrackKey;
+      deezerCoverTrackKey = '';
+      thumbnailAwaitingRefresh = next.available;
+      if (thumbnailAwaitingRefresh) {
+        next.thumbnail = '';
+        refreshMetadataAfterTrackChange(nextTrackKey);
+      }
+    } else if (thumbnailAwaitingRefresh) {
+      next.thumbnail = '';
+    } else if (deezerCoverTrackKey === trackKey) {
+      next.thumbnail = state.thumbnail;
+    }
+
+    const changed = (['available', 'title', 'artist', 'album', 'playback', 'source', 'thumbnail'] as const)
+      .some((key) => state[key] !== next[key]);
+    Object.assign(state, next);
+    if (changed) state.version += 1;
+  }
+
+  function stateForClient(): NowPlayingData {
+    return {
+      available: state.available,
+      title: state.title,
+      artist: state.artist,
+      album: state.album,
+      playback: state.playback,
+      source: state.source,
+      error: state.error || undefined,
+      version: state.version,
+      visualizer: state.visualizer,
+      skin: state.skin,
+      titleMarquee: state.titleMarquee,
+      language: state.language,
+      coverUrl: `/cover/${state.version}`,
+    };
+  }
+
+  function settingsForClient(): OverlaySettings {
+    return {
+      skin: state.skin,
+      startHidden: state.startHidden,
+      titleMarquee: state.titleMarquee,
+      language: state.language,
+    };
+  }
+
+  function audioForClient() {
+    return {
+      active: state.audio.active,
+      bands: state.audio.bands,
+      level: state.audio.level,
+      updatedAt: state.audio.updatedAt,
+      error: state.audio.error || undefined,
+    };
+  }
+
+  async function saveSettings() {
+    if (!settingsPath) return;
+    await writeFile(settingsPath, `${JSON.stringify(settingsForClient(), null, 2)}\n`, 'utf8');
+  }
+
+  function notifySettingsChanged() {
+    const settings = settingsForClient();
+    settingsListeners.forEach((listener) => {
+      try {
+        listener(settings);
+      } catch (error) {
+        console.warn(`Écouteur de paramètres ignoré : ${errorMessage(error)}`);
+      }
+    });
+  }
+
+  function notifyAudioSubscribers(): void {
+    const message = `event: levels\ndata: ${JSON.stringify(audioForClient())}\n\n`;
+    for (const response of audioSubscribers) response.write(message);
+  }
+
+  function updateAudioLevels(value: unknown): boolean {
+    const levels = normalizeAudioLevels(value);
+    if (!levels) return false;
+
+    Object.assign(state.audio, levels, {
+      active: true,
+      updatedAt: Date.now(),
+      error: '',
+    });
+    notifyAudioSubscribers();
+    return true;
+  }
+
+  function setAudioCaptureError(error: unknown): void {
+    state.audio.active = false;
+    state.audio.error = String(error || 'La capture audio a été interrompue.').slice(0, 300);
+    state.audio.bands = Array(audioBandCount).fill(0);
+    state.audio.level = 0;
+    state.audio.updatedAt = Date.now();
+    notifyAudioSubscribers();
+  }
+
+  function svgPlaceholder(): string {
+    const initial = (state.title || state.artist || '♫').trim().slice(0, 1).toUpperCase();
+    const safeInitial = escapeXml(initial);
+    const safeArtist = escapeXml((state.artist || 'Deezer').slice(0, 35));
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9d4edd"/><stop offset="1" stop-color="#2d1157"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <circle cx="256" cy="235" r="124" fill="#ffffff" fill-opacity=".14"/>
+  <text x="256" y="278" fill="white" font-family="Segoe UI, sans-serif" font-size="180" font-weight="700" text-anchor="middle">${safeInitial}</text>
+  <text x="256" y="420" fill="white" fill-opacity=".75" font-family="Segoe UI, sans-serif" font-size="28" text-anchor="middle">${safeArtist}</text>
+</svg>`;
+  }
+
+  function send(response: ServerResponse, status: number, type: string, body: string | Buffer): void {
+    response.writeHead(status, {
+      'Cache-Control': 'no-store',
+      'Content-Type': type,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    response.end(body);
+  }
+
+  function sendCover(response: ServerResponse): void {
+    const match = /^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/i.exec(state.thumbnail);
+    if (match) {
+      send(response, 200, match[1]!, Buffer.from(match[2]!, 'base64'));
+      return;
+    }
+    send(response, 200, 'image/svg+xml; charset=utf-8', svgPlaceholder());
+  }
+
+  async function sendStatic(response: ServerResponse, name: string, type: string): Promise<void> {
+    try {
+      send(response, 200, type, await readFile(join(publicDirectory, name)));
+    } catch (error) {
+      console.error(`Impossible de charger ${name}:`, errorMessage(error));
+      send(response, 500, 'text/plain; charset=utf-8', 'Erreur interne.');
+    }
+  }
+
+  const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
+    const url = new URL(request.url ?? '/', `http://${host}:${port}`);
+    if (request.method === 'POST' && url.pathname === '/api/settings') {
+      try {
+        const payload = await readJsonBody(request) as SettingsUpdate;
+        const updatesStartHidden = Object.hasOwn(payload, 'startHidden');
+        const updatesTitleMarquee = Object.hasOwn(payload, 'titleMarquee');
+        const updatesLanguage = Object.hasOwn(payload, 'language');
+        const updatesSkin = Object.hasOwn(payload, 'skin');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesSkin) throw new Error('Aucun paramètre à enregistrer.');
+        if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
+        if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
+        if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
+        if (updatesSkin && (typeof payload.skin !== 'string' || !overlaySkins.has(payload.skin))) throw new Error('Style d’overlay inconnu.');
+        if (typeof payload.startHidden === 'boolean') state.startHidden = payload.startHidden;
+        if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
+        if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
+        if (typeof payload.skin === 'string') {
+          state.skin = payload.skin as OverlaySkin;
+          state.visualizer = visualizerForSkin[state.skin];
+        }
+        await saveSettings();
+        notifySettingsChanged();
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(settingsForClient()));
+      } catch (error) {
+        send(response, 400, 'application/json; charset=utf-8', JSON.stringify({ error: errorMessage(error) }));
+      }
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/api/audio-stream') {
+      response.writeHead(200, {
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+      });
+      response.write(`retry: 2000\nevent: levels\ndata: ${JSON.stringify(audioForClient())}\n\n`);
+      audioSubscribers.add(response);
+      request.on('close', () => audioSubscribers.delete(response));
+      return;
+    }
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+      send(response, 405, 'text/plain; charset=utf-8', 'Méthode non autorisée.');
+      return;
+    }
+    if (request.method === 'HEAD') {
+      response.writeHead(200);
+      response.end();
+      return;
+    }
+
+    switch (url.pathname) {
+      case '/':
+      case '/index.html':
+        await sendStatic(response, 'index.html', 'text/html; charset=utf-8');
+        break;
+      case '/overlay.css':
+        await sendStatic(response, 'overlay.css', 'text/css; charset=utf-8');
+        break;
+      case '/overlay.js':
+        await sendStatic(response, 'overlay.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/audio-capture':
+      case '/audio-capture.html':
+        await sendStatic(response, 'audio-capture.html', 'text/html; charset=utf-8');
+        break;
+      case '/audio-capture.js':
+        await sendStatic(response, 'audio-capture.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/app':
+      case '/app.html':
+        await sendStatic(response, 'app.html', 'text/html; charset=utf-8');
+        break;
+      case '/app.css':
+        await sendStatic(response, 'app.css', 'text/css; charset=utf-8');
+        break;
+      case '/app.js':
+        await sendStatic(response, 'app.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/i18n.js':
+        await sendStatic(response, 'i18n.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/settings':
+      case '/settings.html':
+        await sendStatic(response, 'settings.html', 'text/html; charset=utf-8');
+        break;
+      case '/settings.css':
+        await sendStatic(response, 'settings.css', 'text/css; charset=utf-8');
+        break;
+      case '/settings.js':
+        await sendStatic(response, 'settings.js', 'text/javascript; charset=utf-8');
+        break;
+      case '/api/now-playing':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(stateForClient()));
+        break;
+      case '/api/health':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify({
+          ok: !state.error,
+          sourceFilter: mediaAppFilter,
+          error: state.error || undefined,
+        }));
+        break;
+      case '/api/settings':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(settingsForClient()));
+        break;
+      case '/api/audio':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(audioForClient()));
+        break;
+      default:
+        if (url.pathname === '/cover' || /^\/cover\/\d+$/.test(url.pathname)) {
+          sendCover(response);
+        } else {
+          send(response, 404, 'text/plain; charset=utf-8', 'Introuvable.');
+        }
+    }
+  });
+
+  manager.on('error', (error) => {
+    state.error = errorMessage(error);
+    console.error(`Windows Media Sessions : ${errorMessage(error)}`);
+  });
+  manager.on('diagnostic', (error) => console.warn(`Windows Media Sessions : ${errorMessage(error)}`));
+  stopListening = manager.onSessionsChanged(updateState);
+  manager.getAllSessions().then(updateState).catch((error) => {
+    state.error ||= errorMessage(error);
+    console.error(`Initialisation Windows Media Sessions impossible : ${errorMessage(error)}`);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(port, host, () => {
+      server.off('error', reject);
+      isListening = true;
+      resolve();
+    });
+  });
+
+  return {
+    host,
+    port,
+    url: `http://${host}:${port}/`,
+    state: stateForClient,
+    settings: settingsForClient,
+    updateAudioLevels,
+    setAudioCaptureError,
+    onSettingsChanged(listener: (settings: OverlaySettings) => void) {
+      settingsListeners.add(listener);
+      return () => settingsListeners.delete(listener);
+    },
+    async close() {
+      stopListening();
+      for (const timer of pendingMetadataRefreshes) clearTimeout(timer);
+      pendingMetadataRefreshes.clear();
+      for (const response of audioSubscribers) response.end();
+      audioSubscribers.clear();
+      if (isListening) {
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+        isListening = false;
+      }
+      await manager.stop();
+    },
+  };
+}

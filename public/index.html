@@ -7,28 +7,41 @@
     <link rel="stylesheet" href="/overlay.css">
     </head>
   <body>
-    <main id="now-playing" aria-live="polite">
-      <div class="equalizer" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
-      <div class="visual-ripples" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="visual-orb" aria-hidden="true"></div>
-      <div class="cover-wrap"><img id="cover" data-i18n-alt="overlay.coverAlt" alt="Pochette de l'album"></div>
-      <div class="text">
-        <div class="label" data-i18n="overlay.label">À l'écoute</div>
-        <div id="title" class="title-marquee">
-          <span class="title-marquee-track">
-            <span id="title-primary">Aucun morceau</span>
-            <span id="title-duplicate" class="title-marquee-duplicate" aria-hidden="true"></span>
-          </span>
+    <main id="now-playing" data-skin="luna" aria-live="polite">
+      <header class="window-chrome" aria-hidden="true">
+        <span class="window-icon">♫</span>
+        <span class="window-caption" data-i18n="overlay.luna.windowTitle">What I Listen — Lecture en cours</span>
+        <span class="window-actions"><i>−</i><i>□</i><i>×</i></span>
+      </header>
+      <div class="overlay-content">
+        <div class="equalizer" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span>
         </div>
-        <div id="artist"></div>
-        <div id="album"></div>
-        <div class="status"><span class="dot"></span><span id="status"></span></div>
+        <div class="spectrum-frame" aria-hidden="true">
+          <div class="spectrum">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="visual-ripples" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="visual-orb" aria-hidden="true"></div>
+        <div class="cover-wrap"><img id="cover" data-i18n-alt="overlay.coverAlt" alt="Pochette de l'album"></div>
+        <div class="text">
+          <div class="label" data-i18n="overlay.label">À l'écoute</div>
+          <div id="title" class="title-marquee">
+            <span class="title-marquee-track">
+              <span id="title-primary">Aucun morceau</span>
+              <span id="title-duplicate" class="title-marquee-duplicate" aria-hidden="true"></span>
+            </span>
+          </div>
+          <div id="artist"></div>
+          <div id="album"></div>
+          <div class="status"><span class="dot"></span><span id="status"></span></div>
+        </div>
       </div>
     </main>
-    <script src="/i18n.js"></script>
-    <script src="/overlay.js"></script>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/overlay.js"></script>
   </body>
 </html>

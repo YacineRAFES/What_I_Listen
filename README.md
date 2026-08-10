@@ -1,6 +1,6 @@
 # What I Listen — Deezer
 
-Application Windows locale qui affiche le morceau Deezer en cours, puis fournit un overlay pour OBS. Elle lit uniquement la session média publiée par Windows : elle ne se connecte pas à Deezer, ne lit aucun fichier de Deezer et n’envoie aucune donnée sur le réseau.
+Application Windows qui affiche le morceau Deezer en cours, puis fournit un overlay pour OBS. Elle lit la session média publiée par Windows. Si Windows conserve une jaquette en retard, l’application recherche une seule fois la piste dans le catalogue public Deezer, avec son titre et son artiste, afin d’afficher la bonne image. Cette recherche ne se connecte pas au compte Deezer et ne lit aucun fichier audio.
 
 Distribué sous licence [MIT](LICENSE).
 
@@ -8,7 +8,9 @@ Distribué sous licence [MIT](LICENSE).
 
 Lance **What I Listen** : l’application démarre discrètement dans la zone de notification Windows, près de l’horloge. Elle continue de fonctionner même lorsque sa fenêtre est masquée. Clique sur son icône pour afficher l’application ; choisis **Quitter** dans ce menu uniquement si tu veux arrêter l’overlay.
 
-La page **Visualiseur** permet de choisir une animation synchronisée à l’audio système (barres, ondes, halo ou aucune). Le choix est mémorisé et OBS se met à jour automatiquement. Le bouton **Ouvrir l’aperçu** affiche une petite fenêtre qui reproduit la source Navigateur en direct : inutile d’ouvrir OBS pour vérifier un changement de visuel. Le visualiseur réagit au son lu par Windows ; évite donc les notifications et les autres sources audio pour qu’il représente uniquement Deezer.
+Depuis l’**Accueil**, le bouton **Ouvrir l’aperçu** affiche une petite fenêtre qui reproduit la source Navigateur OBS en direct : inutile d’ouvrir OBS pour vérifier le rendu. Les animations décoratives tournent en boucle et ne dépendent pas de la capture audio Windows.
+
+Dans **Paramètres**, choisis le style de l’overlay : **Luna** affiche des barres, **Winamp Classic** son spectrum segmenté, **Glass** des ondes et **Aura** un halo. Le choix est mémorisé et s’applique immédiatement dans l’aperçu et dans OBS.
 
 ## Ajouter l’overlay dans OBS
 
@@ -43,6 +45,12 @@ Pour générer l’installateur Windows :
 
 ```powershell
 npm.cmd run dist
+```
+
+Le code est écrit en TypeScript et compilé dans `.build` avant chaque démarrage. Pour valider les types sans lancer l’application :
+
+```powershell
+npm.cmd run check
 ```
 
 ## Publier une release GitHub

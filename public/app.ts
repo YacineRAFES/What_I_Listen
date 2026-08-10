@@ -1,24 +1,25 @@
-const connection = document.querySelector('#connection');
-const cover = document.querySelector('#cover');
-const playback = document.querySelector('#playback');
-const title = document.querySelector('#title');
-const artist = document.querySelector('#artist');
-const album = document.querySelector('#album');
-const errorText = document.querySelector('#error');
-const obsUrl = document.querySelector('#obs-url');
-const copyButton = document.querySelector('#copy-url');
+const connection = document.querySelector<HTMLDivElement>('#connection')!;
+const cover = document.querySelector<HTMLImageElement>('#cover')!;
+const playback = document.querySelector<HTMLParagraphElement>('#playback')!;
+const title = document.querySelector<HTMLHeadingElement>('#title')!;
+const artist = document.querySelector<HTMLParagraphElement>('#artist')!;
+const album = document.querySelector<HTMLParagraphElement>('#album')!;
+const errorText = document.querySelector<HTMLParagraphElement>('#error')!;
+const obsUrl = document.querySelector<HTMLElement>('#obs-url')!;
+const copyButton = document.querySelector<HTMLButtonElement>('#copy-url')!;
+const previewButton = document.querySelector<HTMLButtonElement>('#open-preview')!;
 const { t } = window.i18n;
 
 let previousCoverUrl = '';
-let latestData = null;
+let latestData: NowPlayingData | null = null;
 let latestError = '';
 
-function render(data) {
+function render(data: NowPlayingData) {
   latestData = data;
   latestError = '';
   if (data.language) window.i18n.setLanguage(data.language);
-  connection.className = 'connection ok';
-  connection.textContent = t('app.connection.active');
+  connection.className = data.error ? 'connection error' : 'connection ok';
+  connection.textContent = data.error ? t('app.connection.unavailable') : t('app.connection.active');
   errorText.textContent = data.error || '';
 
   if (!data.available) {
@@ -36,7 +37,7 @@ function render(data) {
   refreshCover(data);
 }
 
-function renderServiceError(message) {
+function renderServiceError(message: string) {
   latestData = null;
   latestError = message;
   connection.className = 'connection error';
@@ -44,7 +45,7 @@ function renderServiceError(message) {
   errorText.textContent = message;
 }
 
-function refreshCover(data) {
+function refreshCover(data: NowPlayingData) {
   if (!data.coverUrl || data.coverUrl === previousCoverUrl) return;
   previousCoverUrl = data.coverUrl;
   cover.removeAttribute('src');
@@ -57,19 +58,36 @@ async function refresh() {
   try {
     const response = await fetch('/api/now-playing', { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    render(await response.json());
+    render(await response.json() as NowPlayingData);
   } catch (error) {
-    renderServiceError(error.message);
+    renderServiceError(error instanceof Error ? error.message : String(error));
   }
 }
 
 copyButton.addEventListener('click', async () => {
   try {
-    await navigator.clipboard.writeText(obsUrl.textContent);
+    await navigator.clipboard.writeText(obsUrl.textContent ?? '');
     copyButton.textContent = t('app.guide.copied');
     window.setTimeout(() => { copyButton.textContent = t('app.guide.copy'); }, 1600);
   } catch {
     errorText.textContent = t('app.copyError');
+  }
+});
+
+previewButton.addEventListener('click', async () => {
+  if (!window.whatIListen?.openPreview) {
+    errorText.textContent = t('app.preview.unavailable');
+    return;
+  }
+
+  previewButton.disabled = true;
+  try {
+    await window.whatIListen.openPreview();
+    errorText.textContent = t('app.preview.opened');
+  } catch {
+    errorText.textContent = t('app.preview.error');
+  } finally {
+    previewButton.disabled = false;
   }
 });
 

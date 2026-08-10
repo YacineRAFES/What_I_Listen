@@ -1,4 +1,4 @@
-import { startOverlayService } from './overlay-service.mjs';
+import { startOverlayService } from './overlay-service.js';
 
 const service = await startOverlayService();
 console.log(`What I Listen est prêt : ${service.url}`);

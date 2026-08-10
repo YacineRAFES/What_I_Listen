@@ -1,33 +1,43 @@
-const startHidden = document.querySelector('#start-hidden');
-const titleMarquee = document.querySelector('#title-marquee');
-const language = document.querySelector('#language');
-const status = document.querySelector('#save-status');
+const startHidden = document.querySelector<HTMLInputElement>('#start-hidden')!;
+const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!;
+const language = document.querySelector<HTMLSelectElement>('#language')!;
+const status = document.querySelector<HTMLElement>('#save-status')!;
+const skinOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="skin"]')];
 const { t } = window.i18n;
 
 let statusKey = 'settings.loading';
 
-function setStatus(key) {
+function setStatus(key: string) {
   statusKey = key;
   status.textContent = t(key);
 }
 
-async function saveSettings(payload) {
+function selectSkin(skin: string) {
+  skinOptions.forEach((option) => {
+    const selected = option.value === skin;
+    option.checked = selected;
+    option.closest('.skin-option')?.classList.toggle('selected', selected);
+  });
+}
+
+async function saveSettings(payload: Partial<OverlaySettings>): Promise<OverlaySettings> {
   const response = await fetch('/api/settings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.json();
+  return response.json() as Promise<OverlaySettings>;
 }
 
 async function load() {
   try {
     const response = await fetch('/api/settings', { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const settings = await response.json();
+    const settings = await response.json() as OverlaySettings;
     startHidden.checked = settings.startHidden;
     titleMarquee.checked = settings.titleMarquee !== false;
+    selectSkin(settings.skin || 'luna');
     language.value = settings.language || window.i18n.language;
     setStatus('settings.loaded');
   } catch {
@@ -66,8 +76,25 @@ titleMarquee.addEventListener('change', async () => {
   }
 });
 
+skinOptions.forEach((option) => option.addEventListener('change', async () => {
+  if (!option.checked) return;
+  const previousSkin = skinOptions.find((item) => item.closest('.skin-option')?.classList.contains('selected'))?.value;
+  selectSkin(option.value);
+  skinOptions.forEach((item) => { item.disabled = true; });
+  setStatus('settings.saving');
+  try {
+    await saveSettings({ skin: option.value as OverlaySkin });
+    setStatus('settings.skinSaved');
+  } catch {
+    selectSkin(previousSkin || 'luna');
+    setStatus('settings.saveError');
+  } finally {
+    skinOptions.forEach((item) => { item.disabled = false; });
+  }
+}));
+
 language.addEventListener('change', async () => {
-  const selectedLanguage = language.value;
+  const selectedLanguage = language.value as OverlaySettings['language'];
   language.disabled = true;
   setStatus('settings.saving');
   try {

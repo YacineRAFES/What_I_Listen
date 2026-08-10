@@ -5,12 +5,13 @@
   "license": "MIT",
   "description": "Application Electron locale pour afficher le morceau Deezer en cours dans OBS.",
   "type": "module",
-  "main": "electron-main.mjs",
+  "main": ".build/electron-main.js",
   "scripts": {
-    "start": "electron .",
-    "start:service": "node src/server.mjs",
-    "check": "node --check electron-main.mjs && node --check preload.cjs && node --check src/audio-capture-preload.cjs && node --check src/overlay-service.mjs && node --check src/server.mjs && node --check public/i18n.js && node --check public/audio-capture.js && node --check public/overlay.js && node --check public/app.js && node --check public/visualizer.js && node --check public/settings.js",
-    "dist": "electron-builder --win nsis",
+    "build": "node scripts/build-assets.mjs && tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "start:service": "npm run build && node .build/src/server.js",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dist": "npm run build && electron-builder --win nsis",
     "release": "release-it"
   },
   "engines": {
@@ -22,16 +23,17 @@
   "devDependencies": {
     "electron": "43.2.0",
     "electron-builder": "26.15.3",
-    "release-it": "^20.0.0"
+    "release-it": "^20.0.0",
+    "typescript": "^5.8.3"
   },
   "build": {
     "appId": "fr.whatilisten.deezer",
     "productName": "What I Listen",
+    "asarUnpack": [
+      "node_modules/windows-media-sessions/bin/**/*"
+    ],
     "files": [
-      "electron-main.mjs",
-      "preload.cjs",
-      "src/**/*",
-      "public/**/*",
+      ".build/**/*",
       "package.json"
     ],
     "win": {

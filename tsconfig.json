@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "rootDir": ".",
+    "outDir": ".build",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "noEmitOnError": true
+  },
+  "include": [
+    "electron-main.ts",
+    "preload.cts",
+    "src/**/*.ts",
+    "src/**/*.cts",
+    "public/**/*.ts",
+    "types/**/*.d.ts"
+  ]
+}

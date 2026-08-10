@@ -14,13 +14,13 @@
           <h1>What I Listen <span>— Deezer</span></h1>
         </div>
         <div class="header-actions">
+          <button id="open-preview" class="preview-button" type="button" data-i18n="app.preview.open">Ouvrir l’aperçu</button>
           <div id="connection" class="connection checking" data-i18n="app.connection.checking">Connexion…</div>
         </div>
       </header>
 
       <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
         <a class="active" href="/app" data-i18n="nav.home">Accueil</a>
-        <a href="/visualizer" data-i18n="nav.visualizer">Visualiseur</a>
         <a href="/settings" data-i18n="nav.settings">Paramètres</a>
       </nav>
 
@@ -59,7 +59,7 @@
 
       <p id="error" class="error" role="status"></p>
     </main>
-    <script src="/i18n.js"></script>
-    <script src="/app.js"></script>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/app.js"></script>
   </body>
 </html>
