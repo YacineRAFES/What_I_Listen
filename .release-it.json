@@ -11,7 +11,7 @@
   },
   "github": {
     "release": true,
-    "releaseName": "What I Listen v${version}",
+    "releaseName": "What I Listen",
     "autoGenerate": true,
     "assets": [
       "dist/*.exe"
@@ -20,6 +20,7 @@
   "hooks": {
     "after:bump": [
       "npm run check",
+      "npm run clean:dist",
       "npm run dist"
     ]
   }

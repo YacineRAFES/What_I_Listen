@@ -11,6 +11,7 @@
     "start": "npm run build && electron .",
     "start:service": "npm run build && node .build/src/server.js",
     "check": "tsc -p tsconfig.json --noEmit",
+    "clean:dist": "node scripts/clean-dist.mjs",
     "dist": "npm run build && electron-builder --win nsis",
     "release": "release-it"
   },

@@ -3,6 +3,7 @@ const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!
 const language = document.querySelector<HTMLSelectElement>('#language')!;
 const neonPalette = document.querySelector<HTMLSelectElement>('#neon-palette')!;
 const neonPaletteControl = document.querySelector<HTMLElement>('#neon-palette-control')!;
+const previewButton = document.querySelector<HTMLButtonElement>('#open-preview')!;
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const skinOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="skin"]')];
 const { t } = window.i18n;
@@ -129,6 +130,23 @@ neonPalette.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     neonPalette.disabled = false;
+  }
+});
+
+previewButton.addEventListener('click', async () => {
+  if (!window.whatIListen?.openPreview) {
+    setStatus('settings.preview.unavailable');
+    return;
+  }
+
+  previewButton.disabled = true;
+  try {
+    await window.whatIListen.openPreview();
+    setStatus('settings.preview.opened');
+  } catch {
+    setStatus('settings.preview.error');
+  } finally {
+    previewButton.disabled = false;
   }
 });
 

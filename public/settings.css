@@ -19,6 +19,11 @@
 .switch input:disabled + .slider { opacity: .55; }
 .skin-card { align-items: flex-start; flex-direction: column; gap: 17px; }
 .skin-options { border: 0; display: grid; gap: 11px; margin: 0; padding: 0; width: 100%; }
+.skin-preview-action { align-items: center; background: rgba(99, 53, 144, .16); border: 1px solid rgba(211, 173, 249, .32); border-radius: 10px; display: flex; gap: 18px; justify-content: space-between; padding: 13px 14px; width: 100%; }
+.skin-preview-action div { display: grid; gap: 3px; }
+.skin-preview-action strong { color: #f4eaff; font-size: 14px; }
+.skin-preview-action small { color: #cfc2dd; font-size: 13px; line-height: 1.35; }
+.skin-preview-action button { flex: 0 0 auto; margin: 0; white-space: nowrap; }
 .skin-option { align-items: center; background: rgba(7, 5, 14, .3); border: 1px solid rgba(211, 173, 249, .19); border-radius: 12px; cursor: pointer; display: flex; gap: 14px; padding: 10px; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
 .skin-option:hover { background: rgba(112, 64, 158, .19); border-color: rgba(218, 186, 249, .52); transform: translateY(-1px); }
 .skin-option.selected { background: rgba(112, 64, 158, .28); border-color: #b87af1; box-shadow: 0 0 0 1px rgba(184, 122, 241, .18); }
@@ -63,4 +68,4 @@
 .skin-choice strong { color: #f4eaff; font-size: 15px; }
 .skin-choice small { color: #cfc2dd; font-size: 13px; line-height: 1.35; }
 .save-status { color: #b9ffb2; font-weight: 700; margin: 20px 0 0; min-height: 24px; }
-@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; }.language-select { margin-top: 3px; }.neon-palette-control { align-items: flex-start; flex-direction: column; }.neon-palette-select { width: 100%; }.neon-palette-select select { width: 100%; } }
+@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; }.language-select { margin-top: 3px; }.skin-preview-action, .neon-palette-control { align-items: flex-start; flex-direction: column; }.neon-palette-select { width: 100%; }.neon-palette-select select { width: 100%; } }

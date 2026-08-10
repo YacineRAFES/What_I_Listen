@@ -7,7 +7,6 @@ const album = document.querySelector<HTMLParagraphElement>('#album')!;
 const errorText = document.querySelector<HTMLParagraphElement>('#error')!;
 const obsUrl = document.querySelector<HTMLElement>('#obs-url')!;
 const copyButton = document.querySelector<HTMLButtonElement>('#copy-url')!;
-const previewButton = document.querySelector<HTMLButtonElement>('#open-preview')!;
 const { t } = window.i18n;
 
 let previousCoverUrl = '';
@@ -71,23 +70,6 @@ copyButton.addEventListener('click', async () => {
     window.setTimeout(() => { copyButton.textContent = t('app.guide.copy'); }, 1600);
   } catch {
     errorText.textContent = t('app.copyError');
-  }
-});
-
-previewButton.addEventListener('click', async () => {
-  if (!window.whatIListen?.openPreview) {
-    errorText.textContent = t('app.preview.unavailable');
-    return;
-  }
-
-  previewButton.disabled = true;
-  try {
-    await window.whatIListen.openPreview();
-    errorText.textContent = t('app.preview.opened');
-  } catch {
-    errorText.textContent = t('app.preview.error');
-  } finally {
-    previewButton.disabled = false;
   }
 });
 
