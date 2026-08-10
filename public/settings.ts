@@ -1,11 +1,14 @@
 const startHidden = document.querySelector<HTMLInputElement>('#start-hidden')!;
 const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!;
 const language = document.querySelector<HTMLSelectElement>('#language')!;
+const neonPalette = document.querySelector<HTMLSelectElement>('#neon-palette')!;
+const neonPaletteControl = document.querySelector<HTMLElement>('#neon-palette-control')!;
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const skinOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="skin"]')];
 const { t } = window.i18n;
 
 let statusKey = 'settings.loading';
+let savedNeonPalette: NeonPalette = 'violet-cyan';
 
 function setStatus(key: string) {
   statusKey = key;
@@ -18,6 +21,8 @@ function selectSkin(skin: string) {
     option.checked = selected;
     option.closest('.skin-option')?.classList.toggle('selected', selected);
   });
+  neonPaletteControl.hidden = skin !== 'neon';
+  neonPalette.disabled = skin !== 'neon';
 }
 
 async function saveSettings(payload: Partial<OverlaySettings>): Promise<OverlaySettings> {
@@ -37,6 +42,8 @@ async function load() {
     const settings = await response.json() as OverlaySettings;
     startHidden.checked = settings.startHidden;
     titleMarquee.checked = settings.titleMarquee !== false;
+    savedNeonPalette = settings.neonPalette || 'violet-cyan';
+    neonPalette.value = savedNeonPalette;
     selectSkin(settings.skin || 'luna');
     language.value = settings.language || window.i18n.language;
     setStatus('settings.loaded');
@@ -106,6 +113,22 @@ language.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     language.disabled = false;
+  }
+});
+
+neonPalette.addEventListener('change', async () => {
+  const selectedPalette = neonPalette.value as NeonPalette;
+  neonPalette.disabled = true;
+  setStatus('settings.saving');
+  try {
+    await saveSettings({ neonPalette: selectedPalette });
+    savedNeonPalette = selectedPalette;
+    setStatus('settings.neonPaletteSaved');
+  } catch {
+    neonPalette.value = savedNeonPalette;
+    setStatus('settings.saveError');
+  } finally {
+    neonPalette.disabled = false;
   }
 });
 

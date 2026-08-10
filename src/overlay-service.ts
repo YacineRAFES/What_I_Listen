@@ -6,14 +6,16 @@ import { createSessionManager } from 'windows-media-sessions';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
-const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura']);
+const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon']);
+const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const supportedLanguages = new Set(['fr', 'en']);
-const defaultSettings = Object.freeze({ skin: 'luna', startHidden: true, titleMarquee: true, language: 'fr' } satisfies OverlaySettings);
+const defaultSettings = Object.freeze({ skin: 'luna', neonPalette: 'violet-cyan', startHidden: true, titleMarquee: true, language: 'fr' } satisfies OverlaySettings);
 const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.freeze({
   luna: 'bars',
   winamp: 'spectrum',
   glass: 'ripple',
   aura: 'pulse',
+  neon: 'bars',
 });
 const audioBandCount = 16;
 const coverRefreshDelayMs = 5000;
@@ -142,6 +144,10 @@ function normalizeSkin(value: unknown): OverlaySkin {
   return typeof value === 'string' && overlaySkins.has(value) ? value as OverlaySkin : defaultSettings.skin;
 }
 
+function normalizeNeonPalette(value: unknown): NeonPalette {
+  return typeof value === 'string' && neonPalettes.has(value) ? value as NeonPalette : defaultSettings.neonPalette;
+}
+
 function normalizeLanguage(value: unknown): 'fr' | 'en' {
   return typeof value === 'string' && supportedLanguages.has(value) ? value as 'fr' | 'en' : defaultSettings.language;
 }
@@ -169,6 +175,7 @@ async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
     const settings = JSON.parse(await readFile(settingsPath, 'utf8')) as SettingsUpdate;
     return {
       skin: normalizeSkin(settings.skin),
+      neonPalette: normalizeNeonPalette(settings.neonPalette),
       startHidden: typeof settings.startHidden === 'boolean' ? settings.startHidden : defaultSettings.startHidden,
       titleMarquee: typeof settings.titleMarquee === 'boolean' ? settings.titleMarquee : defaultSettings.titleMarquee,
       language: normalizeLanguage(settings.language),
@@ -218,6 +225,7 @@ export async function startOverlayService({
     thumbnail: '',
     visualizer: visualizerForSkin[savedSettings.skin],
     skin: savedSettings.skin,
+    neonPalette: savedSettings.neonPalette,
     startHidden: savedSettings.startHidden,
     titleMarquee: savedSettings.titleMarquee,
     language: savedSettings.language,
@@ -382,6 +390,7 @@ export async function startOverlayService({
       version: state.version,
       visualizer: state.visualizer,
       skin: state.skin,
+      neonPalette: state.neonPalette,
       titleMarquee: state.titleMarquee,
       language: state.language,
       coverUrl: `/cover/${state.version}`,
@@ -391,6 +400,7 @@ export async function startOverlayService({
   function settingsForClient(): OverlaySettings {
     return {
       skin: state.skin,
+      neonPalette: state.neonPalette,
       startHidden: state.startHidden,
       titleMarquee: state.titleMarquee,
       language: state.language,
@@ -500,14 +510,17 @@ export async function startOverlayService({
         const updatesTitleMarquee = Object.hasOwn(payload, 'titleMarquee');
         const updatesLanguage = Object.hasOwn(payload, 'language');
         const updatesSkin = Object.hasOwn(payload, 'skin');
-        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesSkin) throw new Error('Aucun paramètre à enregistrer.');
+        const updatesNeonPalette = Object.hasOwn(payload, 'neonPalette');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesSkin && !updatesNeonPalette) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
         if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
         if (updatesSkin && (typeof payload.skin !== 'string' || !overlaySkins.has(payload.skin))) throw new Error('Style d’overlay inconnu.');
+        if (updatesNeonPalette && (typeof payload.neonPalette !== 'string' || !neonPalettes.has(payload.neonPalette))) throw new Error('Palette néon inconnue.');
         if (typeof payload.startHidden === 'boolean') state.startHidden = payload.startHidden;
         if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
         if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
+        if (typeof payload.neonPalette === 'string') state.neonPalette = payload.neonPalette as NeonPalette;
         if (typeof payload.skin === 'string') {
           state.skin = payload.skin as OverlaySkin;
           state.visualizer = visualizerForSkin[state.skin];

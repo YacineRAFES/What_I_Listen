@@ -76,7 +76,26 @@
             <span class="skin-preview glass-preview" aria-hidden="true"><i></i><b></b><em></em></span>
             <span class="skin-choice"><strong data-i18n="settings.skin.glass">Glass</strong><small data-i18n="settings.skin.glassDescription">Verre bleuté et lecteur Windows aérien.</small></span>
           </label>
+          <label class="skin-option" data-skin-option="neon">
+            <input type="radio" name="skin" value="neon">
+            <span class="skin-preview neon-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.neon">Néon rétro</strong><small data-i18n="settings.skin.neonDescription">Grille synthwave, cyan et magenta, avec barres lumineuses.</small></span>
+          </label>
         </fieldset>
+        <div id="neon-palette-control" class="neon-palette-control" hidden>
+          <div class="setting-copy">
+            <h4 data-i18n="settings.neonPalette.title">Palette néon</h4>
+            <p data-i18n="settings.neonPalette.description">Change les couleurs du thème néon sans modifier sa mise en page.</p>
+          </div>
+          <label class="neon-palette-select" for="neon-palette">
+            <span class="sr-only" data-i18n="settings.neonPalette.label">Palette néon</span>
+            <select id="neon-palette">
+              <option value="violet-cyan" data-i18n="settings.neonPalette.violetCyan">Violet et cyan</option>
+              <option value="sunset" data-i18n="settings.neonPalette.sunset">Coucher de soleil</option>
+              <option value="laser" data-i18n="settings.neonPalette.laser">Laser vert</option>
+            </select>
+          </label>
+        </div>
       </section>
 
       <section class="settings-card language-card">

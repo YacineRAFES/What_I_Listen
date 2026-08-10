@@ -10,7 +10,7 @@ Lance **What I Listen** : l’application démarre discrètement dans la zone de
 
 Depuis l’**Accueil**, le bouton **Ouvrir l’aperçu** affiche une petite fenêtre qui reproduit la source Navigateur OBS en direct : inutile d’ouvrir OBS pour vérifier le rendu. Les animations décoratives tournent en boucle et ne dépendent pas de la capture audio Windows.
 
-Dans **Paramètres**, choisis le style de l’overlay : **Luna** affiche des barres, **Winamp Classic** son spectrum segmenté, **Glass** des ondes et **Aura** un halo. Le choix est mémorisé et s’applique immédiatement dans l’aperçu et dans OBS.
+Dans **Paramètres**, choisis le style de l’overlay : **Luna** affiche des barres, **Winamp Classic** son spectrum segmenté, **Glass** des ondes, **Aura** un halo et **Néon rétro** une grille synthwave et des barres lumineuses. Le choix est mémorisé et s’applique immédiatement dans l’aperçu et dans OBS.
 
 ## Ajouter l’overlay dans OBS
 

@@ -575,3 +575,125 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing[data-skin="glass"] .visual-ripples { right: -16px; top: -13px; }
 #now-playing[data-skin="glass"] .visual-ripples i { border-color: rgba(172, 255, 248, .72); }
 #now-playing[data-skin="glass"] .visual-orb { background: radial-gradient(circle, rgba(141, 255, 244, .42), rgba(49, 183, 255, .18) 42%, transparent 70%); right: -23px; top: -17px; }
+
+/* Néon rétro : une carte synthwave originale avec une grille en perspective. */
+#now-playing[data-skin="neon"] {
+  --neon-primary: #2bedff;
+  --neon-primary-dim: rgba(23, 235, 255, .2);
+  --neon-secondary: #ff37d2;
+  --neon-secondary-dim: rgba(255, 39, 203, .32);
+  --neon-mid: #8b4cff;
+  --neon-status: #c5ff5d;
+  --neon-artist: #ffd0f3;
+  background:
+    radial-gradient(ellipse at 17% 3%, var(--neon-secondary-dim), transparent 42%),
+    radial-gradient(ellipse at 86% 17%, var(--neon-primary-dim), transparent 38%),
+    linear-gradient(132deg, #080016 0%, #150027 54%, #060a1d 100%);
+  border: 1px solid var(--neon-primary);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--neon-secondary), 0 0 16px var(--neon-primary), 0 0 30px var(--neon-secondary), inset 0 0 22px rgba(76, 20, 140, .62);
+  font-family: "Courier New", Consolas, monospace;
+  padding: 0;
+}
+
+#now-playing[data-skin="neon"][data-neon-palette="sunset"] {
+  --neon-primary: #ffb34b;
+  --neon-primary-dim: rgba(255, 150, 39, .22);
+  --neon-secondary: #ff3e6c;
+  --neon-secondary-dim: rgba(255, 47, 93, .34);
+  --neon-mid: #b51e69;
+  --neon-status: #fff17a;
+  --neon-artist: #ffe1ba;
+}
+
+#now-playing[data-skin="neon"][data-neon-palette="laser"] {
+  --neon-primary: #38ffb0;
+  --neon-primary-dim: rgba(35, 255, 160, .2);
+  --neon-secondary: #a5ff35;
+  --neon-secondary-dim: rgba(151, 255, 35, .28);
+  --neon-mid: #16bdbb;
+  --neon-status: #f1ff8b;
+  --neon-artist: #d0ffe4;
+}
+
+#now-playing[data-skin="neon"]::before {
+  background:
+    linear-gradient(90deg, transparent, rgba(223, 255, 255, .11) 48%, transparent),
+    repeating-linear-gradient(180deg, transparent 0 3px, var(--neon-primary-dim) 3px 4px);
+  content: '';
+  inset: 20px 0 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+#now-playing[data-skin="neon"] .window-chrome {
+  align-items: center;
+  background: linear-gradient(90deg, var(--neon-secondary), var(--neon-mid) 47%, var(--neon-primary));
+  border-bottom: 1px solid #b8fcff;
+  color: #fff;
+  display: flex;
+  flex: 0 0 20px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  padding: 0 6px;
+  position: relative;
+  text-shadow: 0 0 5px rgba(255, 255, 255, .92), 1px 1px #22104a;
+  text-transform: uppercase;
+  width: 100%;
+  z-index: 1;
+}
+
+#now-playing[data-skin="neon"] .window-icon { color: #fff; font-size: 12px; margin-right: 5px; text-shadow: 0 0 6px var(--neon-primary); }
+#now-playing[data-skin="neon"] .window-caption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#now-playing[data-skin="neon"] .window-actions { display: flex; gap: 3px; margin-left: auto; }
+#now-playing[data-skin="neon"] .window-actions i { align-items: center; border: 1px solid rgba(228, 255, 255, .78); color: #fff; display: flex; font-family: Arial, sans-serif; font-size: 9px; font-style: normal; height: 13px; justify-content: center; line-height: 1; text-shadow: none; width: 14px; }
+
+#now-playing[data-skin="neon"] .overlay-content {
+  background: linear-gradient(180deg, rgba(8, 0, 22, .1) 0 51%, rgba(31, 0, 61, .22) 52%);
+  gap: 11px;
+  overflow: hidden;
+  padding: 8px 11px 9px;
+}
+
+#now-playing[data-skin="neon"] .overlay-content::before {
+  background:
+    repeating-linear-gradient(90deg, var(--neon-primary) 0 1px, transparent 1px 18px),
+    repeating-linear-gradient(0deg, var(--neon-secondary) 0 1px, transparent 1px 12px);
+  bottom: -13px;
+  content: '';
+  height: 52px;
+  left: -34px;
+  opacity: .66;
+  pointer-events: none;
+  position: absolute;
+  right: -34px;
+  transform: perspective(112px) rotateX(58deg);
+  transform-origin: bottom;
+  z-index: 0;
+}
+
+#now-playing[data-skin="neon"] .cover-wrap {
+  background: linear-gradient(135deg, var(--neon-secondary), var(--neon-mid) 54%, var(--neon-primary));
+  border: 1px solid var(--neon-primary);
+  border-radius: 1px;
+  box-shadow: 0 0 0 2px var(--neon-secondary), 0 0 11px var(--neon-primary);
+  flex-basis: 80px;
+  height: 80px;
+}
+
+#now-playing[data-skin="neon"] #cover { image-rendering: auto; }
+#now-playing[data-skin="neon"] .text { padding-right: 105px; }
+#now-playing[data-skin="neon"] .label { color: var(--neon-primary); font-size: 10px; font-weight: 700; letter-spacing: .17em; margin-bottom: 3px; text-shadow: 0 0 7px var(--neon-primary); }
+#now-playing[data-skin="neon"] #title { color: #fff; font-size: 19px; font-weight: 700; line-height: 1.13; text-shadow: 2px 0 var(--neon-secondary), -1px 0 var(--neon-primary), 0 0 10px rgba(255, 242, 255, .7); }
+#now-playing[data-skin="neon"] #artist { color: var(--neon-artist); font-size: 14px; font-weight: 700; margin-top: 4px; text-shadow: 0 0 6px var(--neon-secondary); }
+#now-playing[data-skin="neon"] #album { color: var(--neon-primary); font-size: 10px; margin-top: 3px; text-shadow: 0 0 5px var(--neon-primary); }
+#now-playing[data-skin="neon"] .status { color: var(--neon-status); font-size: 10px; font-weight: 700; gap: 5px; margin-top: 6px; text-shadow: 0 0 7px var(--neon-status); }
+#now-playing[data-skin="neon"] .dot { height: 6px; width: 6px; }
+
+#now-playing[data-skin="neon"] .equalizer { bottom: 9px; height: 68px; right: 14px; top: auto; transform: skewX(-8deg); }
+#now-playing[data-skin="neon"] .equalizer span { background: linear-gradient(to top, var(--neon-primary) 0 26%, var(--neon-mid) 48%, var(--neon-secondary) 100%); border-radius: 0; box-shadow: 0 0 4px var(--neon-primary), 0 0 10px var(--neon-secondary); width: 5px; }
+#now-playing[data-skin="neon"] .spectrum-frame { display: none; }
+#now-playing[data-skin="neon"] .visual-ripples { right: -17px; top: -12px; }
+#now-playing[data-skin="neon"] .visual-orb { background: radial-gradient(circle, var(--neon-secondary-dim), var(--neon-primary-dim) 48%, transparent 70%); right: -24px; top: -18px; }

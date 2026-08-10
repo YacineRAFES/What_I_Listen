@@ -4,10 +4,12 @@ interface AudioLevels {
 }
 
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse';
-type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura';
+type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon';
+type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 
 interface OverlaySettings {
   skin: OverlaySkin;
+  neonPalette: NeonPalette;
   startHidden: boolean;
   titleMarquee: boolean;
   language: 'fr' | 'en';
@@ -24,6 +26,7 @@ interface NowPlayingData {
   coverUrl: string;
   visualizer: VisualizerMode;
   skin: OverlaySkin;
+  neonPalette: NeonPalette;
   titleMarquee: boolean;
   language: 'fr' | 'en';
   error?: string;

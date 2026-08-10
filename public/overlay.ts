@@ -112,6 +112,7 @@ function update(data: NowPlayingData) {
   latestData = data;
   if (data.language) window.i18n.setLanguage(data.language);
   card.dataset.skin = data.skin || 'luna';
+  card.dataset.neonPalette = data.neonPalette || 'violet-cyan';
   const nextTitleMarqueeEnabled = data.titleMarquee !== false;
   const titleMarqueeChanged = titleMarqueeEnabled !== nextTitleMarqueeEnabled;
   titleMarqueeEnabled = nextTitleMarqueeEnabled;
