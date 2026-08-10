@@ -1,6 +1,6 @@
 {
   "name": "what-i-listen",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "license": "MIT",
   "description": "Application Electron locale pour afficher le morceau Deezer en cours dans OBS.",
