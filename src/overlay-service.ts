@@ -9,7 +9,14 @@ const publicDirectory = join(root, '..', 'public');
 const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon']);
 const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const supportedLanguages = new Set(['fr', 'en']);
-const defaultSettings = Object.freeze({ skin: 'luna', neonPalette: 'violet-cyan', startHidden: true, titleMarquee: true, language: 'fr' } satisfies OverlaySettings);
+const defaultSettings = Object.freeze({
+  skin: 'luna',
+  neonPalette: 'violet-cyan',
+  audioOutputDeviceId: '',
+  startHidden: true,
+  titleMarquee: true,
+  language: 'fr',
+} satisfies OverlaySettings);
 const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.freeze({
   luna: 'bars',
   winamp: 'spectrum',
@@ -152,6 +159,10 @@ function normalizeLanguage(value: unknown): 'fr' | 'en' {
   return typeof value === 'string' && supportedLanguages.has(value) ? value as 'fr' | 'en' : defaultSettings.language;
 }
 
+function normalizeAudioOutputDeviceId(value: unknown): string {
+  return typeof value === 'string' ? value.trim().slice(0, 512) : defaultSettings.audioOutputDeviceId;
+}
+
 function normalizeAudioLevels(value: unknown): AudioLevels | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<AudioLevels>;
@@ -176,6 +187,7 @@ async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
     return {
       skin: normalizeSkin(settings.skin),
       neonPalette: normalizeNeonPalette(settings.neonPalette),
+      audioOutputDeviceId: normalizeAudioOutputDeviceId(settings.audioOutputDeviceId),
       startHidden: typeof settings.startHidden === 'boolean' ? settings.startHidden : defaultSettings.startHidden,
       titleMarquee: typeof settings.titleMarquee === 'boolean' ? settings.titleMarquee : defaultSettings.titleMarquee,
       language: normalizeLanguage(settings.language),
@@ -224,9 +236,10 @@ export async function startOverlayService({
     source: '',
     thumbnail: '',
     visualizer: visualizerForSkin[savedSettings.skin],
-    skin: savedSettings.skin,
-    neonPalette: savedSettings.neonPalette,
-    startHidden: savedSettings.startHidden,
+      skin: savedSettings.skin,
+      neonPalette: savedSettings.neonPalette,
+      audioOutputDeviceId: savedSettings.audioOutputDeviceId,
+      startHidden: savedSettings.startHidden,
     titleMarquee: savedSettings.titleMarquee,
     language: savedSettings.language,
     audio: {
@@ -401,6 +414,7 @@ export async function startOverlayService({
     return {
       skin: state.skin,
       neonPalette: state.neonPalette,
+      audioOutputDeviceId: state.audioOutputDeviceId,
       startHidden: state.startHidden,
       titleMarquee: state.titleMarquee,
       language: state.language,
@@ -511,16 +525,19 @@ export async function startOverlayService({
         const updatesLanguage = Object.hasOwn(payload, 'language');
         const updatesSkin = Object.hasOwn(payload, 'skin');
         const updatesNeonPalette = Object.hasOwn(payload, 'neonPalette');
-        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesSkin && !updatesNeonPalette) throw new Error('Aucun paramètre à enregistrer.');
+        const updatesAudioOutputDeviceId = Object.hasOwn(payload, 'audioOutputDeviceId');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesSkin && !updatesNeonPalette && !updatesAudioOutputDeviceId) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
         if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
         if (updatesSkin && (typeof payload.skin !== 'string' || !overlaySkins.has(payload.skin))) throw new Error('Style d’overlay inconnu.');
         if (updatesNeonPalette && (typeof payload.neonPalette !== 'string' || !neonPalettes.has(payload.neonPalette))) throw new Error('Palette néon inconnue.');
+        if (updatesAudioOutputDeviceId && (typeof payload.audioOutputDeviceId !== 'string' || payload.audioOutputDeviceId.length > 512)) throw new Error('Périphérique audio invalide.');
         if (typeof payload.startHidden === 'boolean') state.startHidden = payload.startHidden;
         if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
         if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
         if (typeof payload.neonPalette === 'string') state.neonPalette = payload.neonPalette as NeonPalette;
+        if (typeof payload.audioOutputDeviceId === 'string') state.audioOutputDeviceId = normalizeAudioOutputDeviceId(payload.audioOutputDeviceId);
         if (typeof payload.skin === 'string') {
           state.skin = payload.skin as OverlaySkin;
           state.visualizer = visualizerForSkin[state.skin];
@@ -565,13 +582,6 @@ export async function startOverlayService({
         break;
       case '/overlay.js':
         await sendStatic(response, 'overlay.js', 'text/javascript; charset=utf-8');
-        break;
-      case '/audio-capture':
-      case '/audio-capture.html':
-        await sendStatic(response, 'audio-capture.html', 'text/html; charset=utf-8');
-        break;
-      case '/audio-capture.js':
-        await sendStatic(response, 'audio-capture.js', 'text/javascript; charset=utf-8');
         break;
       case '/app':
       case '/app.html':

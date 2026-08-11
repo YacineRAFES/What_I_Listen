@@ -8,6 +8,14 @@
 .language-select::after { color: #d9bcf4; content: '⌄'; font-size: 20px; pointer-events: none; position: absolute; right: 11px; top: 5px; }
 .language-select select:focus-visible { outline: 2px solid #d7a8ff; outline-offset: 3px; }
 .language-select select:disabled { cursor: wait; opacity: .55; }
+.audio-source-card { align-items: flex-start; flex-direction: column; }
+.audio-source-control { align-items: center; display: flex; gap: 10px; justify-content: space-between; width: 100%; }
+.audio-source-select { position: relative; }
+.audio-source-select select { appearance: none; background: #241634; border: 1px solid #8f69b6; border-radius: 9px; color: #f9f7ff; cursor: pointer; font: inherit; font-weight: 700; max-width: 330px; min-width: 230px; padding: 10px 36px 10px 13px; }
+.audio-source-select::after { color: #d9bcf4; content: '⌄'; font-size: 20px; pointer-events: none; position: absolute; right: 11px; top: 5px; }
+.audio-source-select select:focus-visible { outline: 2px solid #d7a8ff; outline-offset: 3px; }
+.audio-source-select select:disabled, .audio-source-control button:disabled { cursor: wait; opacity: .55; }
+.audio-source-control button { flex: 0 0 auto; margin: 0; white-space: nowrap; }
 .sr-only { height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 .switch { cursor: pointer; flex: 0 0 auto; height: 34px; position: relative; width: 60px; }
 .switch input { height: 0; opacity: 0; width: 0; }
@@ -68,4 +76,4 @@
 .skin-choice strong { color: #f4eaff; font-size: 15px; }
 .skin-choice small { color: #cfc2dd; font-size: 13px; line-height: 1.35; }
 .save-status { color: #b9ffb2; font-weight: 700; margin: 20px 0 0; min-height: 24px; }
-@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; }.language-select { margin-top: 3px; }.skin-preview-action, .neon-palette-control { align-items: flex-start; flex-direction: column; }.neon-palette-select { width: 100%; }.neon-palette-select select { width: 100%; } }
+@media (max-width: 720px) { .settings-card { align-items: flex-start; }.switch { margin-top: 3px; }.language-select { margin-top: 3px; }.audio-source-control, .skin-preview-action, .neon-palette-control { align-items: flex-start; flex-direction: column; }.audio-source-select, .audio-source-select select, .neon-palette-select, .neon-palette-select select { width: 100%; } }

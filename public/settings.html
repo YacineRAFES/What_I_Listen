@@ -49,6 +49,22 @@
         </label>
       </section>
 
+      <section class="settings-card audio-source-card">
+        <div class="setting-copy">
+          <h3 data-i18n="settings.audio.title">Sortie audio du spectrum</h3>
+          <p data-i18n="settings.audio.description">Choisis la sortie Windows dont le spectrum doit analyser la musique. Sélectionne SteelSeries Sonar - Media pour Deezer.</p>
+        </div>
+        <div class="audio-source-control">
+          <label class="audio-source-select" for="audio-output-device">
+            <span class="sr-only" data-i18n="settings.audio.label">Sortie audio à analyser</span>
+            <select id="audio-output-device" name="audio-output-device">
+              <option value="" data-i18n="settings.audio.systemMix">Sortie Windows par défaut</option>
+            </select>
+          </label>
+          <button id="refresh-audio-outputs" type="button" data-i18n="settings.audio.refresh">Actualiser les sorties</button>
+        </div>
+      </section>
+
       <section class="settings-card skin-card">
         <div class="setting-copy">
           <h3 data-i18n="settings.skin.title">Style de l’overlay</h3>

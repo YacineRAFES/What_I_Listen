@@ -3,6 +3,12 @@ interface AudioLevels {
   level: number;
 }
 
+interface AudioOutputDevice {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse';
 type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
@@ -10,6 +16,7 @@ type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 interface OverlaySettings {
   skin: OverlaySkin;
   neonPalette: NeonPalette;
+  audioOutputDeviceId: string;
   startHidden: boolean;
   titleMarquee: boolean;
   language: 'fr' | 'en';
@@ -43,13 +50,9 @@ interface I18nApi {
 
 interface Window {
   i18n: I18nApi;
-  audioCapture: {
-    getSourceId(): Promise<string>;
-    publishLevels(levels: AudioLevels): void;
-    reportError(message: string): void;
-  };
   whatIListen?: {
     openPreview(): Promise<void>;
+    listAudioOutputs(): Promise<AudioOutputDevice[]>;
   };
 }
 

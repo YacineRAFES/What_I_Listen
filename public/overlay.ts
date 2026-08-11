@@ -18,7 +18,6 @@ const query = new URLSearchParams(window.location.search);
 const debugMode = query.has('debug');
 const previewMode = query.has('preview');
 let lastAudioUpdate = 0;
-let previewAnimationFrame: number | null = null;
 let titleMarqueeAnimationFrame: number | null = null;
 let titleMarqueeEnabled = true;
 
@@ -30,17 +29,18 @@ function applyAudioLevels(audio?: AudioLevels) {
   bars.forEach((bar, index) => {
     const position = Math.round((index / Math.max(1, bars.length - 1)) * Math.max(0, bands.length - 1));
     const band = Math.max(0, Math.min(1, Number(bands[position]) || 0));
-    bar.style.setProperty('--bar-level', String(Math.max(0.08, Math.pow(band, 0.72) * 1.15)));
+    bar.style.setProperty('--bar-level', String(Math.min(1, Math.pow(band, 0.72) * 1.15)));
   });
   spectrumBars.forEach((bar, index) => {
     const position = Math.round((index / Math.max(1, spectrumBars.length - 1)) * Math.max(0, bands.length - 1));
     const band = Math.max(0, Math.min(1, Number(bands[position]) || 0));
-    const targetLevel = Math.max(.06, Math.min(1, Math.pow(band, .68) * 1.16));
-    const smoothing = targetLevel > spectrumLevels[index] ? .68 : .26;
+    const targetLevel = Math.min(1, Math.pow(band, .68) * 1.16);
+    const smoothing = targetLevel > spectrumLevels[index] ? .82 : .38;
     spectrumLevels[index] += (targetLevel - spectrumLevels[index]) * smoothing;
-    spectrumPeaks[index] = Math.max(spectrumLevels[index], spectrumPeaks[index] - .07, .08);
+    spectrumPeaks[index] = Math.max(spectrumLevels[index], spectrumPeaks[index] - .1);
     bar.style.setProperty('--spectrum-level', String(spectrumLevels[index]));
     bar.style.setProperty('--spectrum-peak', `${(spectrumPeaks[index] * 100).toFixed(2)}%`);
+    bar.style.setProperty('--spectrum-empty', `${(100 - spectrumLevels[index] * 100).toFixed(2)}%`);
   });
   card.style.setProperty('--audio-opacity', String(0.1 + intensity * 0.38));
   card.style.setProperty('--spectrum-opacity', String(.48 + intensity * .5));
@@ -53,26 +53,6 @@ function applyAudioLevels(audio?: AudioLevels) {
   card.style.setProperty('--ripple-scale-3', String(1.15 + intensity * 1.55));
   card.style.setProperty('--pulse-opacity', String(0.08 + intensity * 0.62));
   card.style.setProperty('--pulse-scale', String(0.65 + intensity * 0.7));
-}
-
-function animatePreview(time: number) {
-  previewAnimationFrame = null;
-  if (!previewMode) return;
-
-  const bandCount = Math.max(bars.length, spectrumBars.length);
-  const bands = Array.from({ length: bandCount }, (_, index) => {
-    const wave = Math.sin(time / 180 + index * .78);
-    const accent = Math.sin(time / 410 + index * 1.63);
-    return Math.max(.06, .22 + wave * .2 + accent * .13);
-  });
-  applyAudioLevels({ bands, level: bands.reduce((total, band) => total + band, 0) / bands.length });
-  previewAnimationFrame = window.requestAnimationFrame(animatePreview);
-}
-
-function ensurePreviewAnimation() {
-  if (previewMode && previewAnimationFrame === null) {
-    previewAnimationFrame = window.requestAnimationFrame(animatePreview);
-  }
 }
 
 function updateTitleMarquee() {
@@ -130,7 +110,6 @@ function update(data: NowPlayingData) {
     card.dataset.visualizer = data.visualizer || 'bars';
     card.classList.toggle('paused', !previewMode);
     card.classList.add('visible');
-    ensurePreviewAnimation();
     refreshCover(data);
     return;
   }
@@ -145,7 +124,6 @@ function update(data: NowPlayingData) {
   if (previewMode) {
     status.textContent = t('overlay.preview');
     card.classList.remove('paused');
-    ensurePreviewAnimation();
   }
 
   refreshCover(data);
@@ -187,7 +165,6 @@ audioStream.addEventListener('levels', (event) => {
     const audio = JSON.parse(event.data) as AudioLevels & { updatedAt?: number };
     lastAudioUpdate = audio.updatedAt || Date.now();
     applyAudioLevels(audio);
-    ensurePreviewAnimation();
   } catch {
     // Le prochain événement rétablira naturellement le visuel.
   }

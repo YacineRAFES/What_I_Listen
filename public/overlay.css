@@ -57,10 +57,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 }
 
 #now-playing[data-visualizer="bars"] .equalizer { display: flex; }
-#now-playing[data-visualizer="bars"] .equalizer span { animation: idle-equalizer 1.08s ease-in-out infinite alternate; }
-#now-playing[data-visualizer="bars"] .equalizer span:nth-child(2n) { animation-delay: -.48s; animation-duration: .86s; }
-#now-playing[data-visualizer="bars"] .equalizer span:nth-child(3n) { animation-delay: -.74s; animation-duration: 1.27s; }
-#now-playing[data-visualizer="bars"] .equalizer span:nth-child(5n) { animation-delay: -.2s; animation-duration: .98s; }
 
 .equalizer span {
   background: linear-gradient(to top, rgba(121, 255, 146, .1), rgba(180, 255, 129, .9));
@@ -71,11 +67,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
   transform-origin: bottom center;
   transition: transform .07s ease-out;
   width: 5px;
-}
-
-@keyframes idle-equalizer {
-  from { transform: scaleY(.16); }
-  to { transform: scaleY(.96); }
 }
 
 .spectrum {
@@ -95,11 +86,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 .spectrum-frame { display: contents; }
 
 #now-playing[data-visualizer="spectrum"] .spectrum { display: flex; }
-#now-playing[data-visualizer="spectrum"] .spectrum span { animation: idle-spectrum 1.12s ease-in-out infinite alternate; }
-#now-playing[data-visualizer="spectrum"] .spectrum span:nth-child(4n + 1) { --idle-spectrum-height: .42; animation-delay: -.32s; animation-duration: .94s; }
-#now-playing[data-visualizer="spectrum"] .spectrum span:nth-child(4n + 2) { --idle-spectrum-height: .72; animation-delay: -.78s; animation-duration: 1.23s; }
-#now-playing[data-visualizer="spectrum"] .spectrum span:nth-child(4n + 3) { --idle-spectrum-height: .98; animation-delay: -.11s; animation-duration: 1.06s; }
-#now-playing[data-visualizer="spectrum"] .spectrum span:nth-child(4n) { --idle-spectrum-height: .58; animation-delay: -.57s; animation-duration: .82s; }
 
 .spectrum span {
   background:
@@ -129,11 +115,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
   right: 0;
 }
 
-@keyframes idle-spectrum {
-  from { transform: scaleY(.12); }
-  to { transform: scaleY(var(--idle-spectrum-height, .76)); }
-}
-
 .visual-ripples {
   display: none;
   height: 160px;
@@ -147,9 +128,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 }
 
 #now-playing[data-visualizer="ripple"] .visual-ripples { display: block; }
-#now-playing[data-visualizer="ripple"] .visual-ripples i { animation: idle-ripple 2.7s ease-out infinite; }
-#now-playing[data-visualizer="ripple"] .visual-ripples i:nth-child(2) { animation-delay: -.9s; }
-#now-playing[data-visualizer="ripple"] .visual-ripples i:nth-child(3) { animation-delay: -1.8s; }
 
 .visual-ripples i {
   border: 2px solid rgba(170, 255, 125, .62);
@@ -166,12 +144,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 .visual-ripples i:nth-child(1) { transform: scale(var(--ripple-scale-1, .35)); }
 .visual-ripples i:nth-child(2) { opacity: var(--ripple-opacity-2, .09); transform: scale(var(--ripple-scale-2, .8)); }
 .visual-ripples i:nth-child(3) { opacity: var(--ripple-opacity-3, .05); transform: scale(var(--ripple-scale-3, 1.2)); }
-
-@keyframes idle-ripple {
-  0% { opacity: 0; transform: scale(.28); }
-  18% { opacity: .68; }
-  100% { opacity: 0; transform: scale(2.35); }
-}
 
 .visual-orb {
   background: radial-gradient(circle, rgba(185, 255, 128, .35), rgba(110, 255, 151, .13) 36%, transparent 70%);
@@ -192,12 +164,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 }
 
 #now-playing[data-visualizer="pulse"] .visual-orb { display: block; }
-#now-playing[data-visualizer="pulse"] .visual-orb { animation: idle-pulse 2.25s ease-in-out infinite; }
-
-@keyframes idle-pulse {
-  0%, 100% { opacity: .16; transform: scale(.66); }
-  50% { opacity: .78; transform: scale(1.28); }
-}
 
 .cover-wrap {
   background: radial-gradient(circle at 30% 25%, #9e4de7, #32125a 72%);
@@ -512,19 +478,8 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 /* Sur Winamp, les segments restent à taille fixe : la barre progresse par crans,
    au lieu d’être étirée verticalement comme un spectrum moderne. */
 #now-playing[data-skin="winamp"][data-visualizer="spectrum"] .spectrum span {
-  animation-name: idle-winamp-spectrum;
-  animation-timing-function: steps(12, end);
-  clip-path: inset(88% 0 0 0);
-  transition: none;
-}
-#now-playing[data-skin="winamp"][data-visualizer="spectrum"] .spectrum span:nth-child(4n + 1) { --winamp-spectrum-empty: 56%; }
-#now-playing[data-skin="winamp"][data-visualizer="spectrum"] .spectrum span:nth-child(4n + 2) { --winamp-spectrum-empty: 25%; }
-#now-playing[data-skin="winamp"][data-visualizer="spectrum"] .spectrum span:nth-child(4n + 3) { --winamp-spectrum-empty: 7%; }
-#now-playing[data-skin="winamp"][data-visualizer="spectrum"] .spectrum span:nth-child(4n) { --winamp-spectrum-empty: 40%; }
-
-@keyframes idle-winamp-spectrum {
-  from { clip-path: inset(88% 0 0 0); }
-  to { clip-path: inset(var(--winamp-spectrum-empty, 18%) 0 0 0); }
+  clip-path: inset(var(--spectrum-empty, 100%) 0 0 0);
+  transition: clip-path .05s steps(12, end);
 }
 #now-playing[data-skin="winamp"] .visual-ripples { right: -15px; top: -17px; }
 #now-playing[data-skin="winamp"] .visual-orb { right: -22px; top: -24px; }

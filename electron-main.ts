@@ -1,18 +1,25 @@
-import { app, BrowserWindow, desktopCapturer, dialog, ipcMain, Menu, nativeImage, screen, session, Tray, type BrowserWindow as ElectronBrowserWindow, type DesktopCapturerSource, type Tray as ElectronTray } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray, type BrowserWindow as ElectronBrowserWindow, type Tray as ElectronTray } from 'electron';
+import { spawn, type ChildProcess } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startOverlayService, type OverlayService } from './src/overlay-service.js';
 
 const projectDirectory = dirname(fileURLToPath(import.meta.url));
 const preloadPath = join(projectDirectory, 'preload.cjs');
-const audioCapturePreloadPath = join(projectDirectory, 'src', 'audio-capture-preload.cjs');
 
 let mainWindow: ElectronBrowserWindow | null = null;
 let previewWindow: ElectronBrowserWindow | null = null;
-let audioCaptureWindow: ElectronBrowserWindow | null = null;
+let nativeAudioCapture: ChildProcess | null = null;
 let overlayService: OverlayService | null = null;
 let tray: ElectronTray | null = null;
 let isQuitting = false;
+let audioCaptureRestart: Promise<void> | null = null;
+
+interface AudioOutputDevice {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
 
 const nativeTranslations = {
   fr: {
@@ -75,59 +82,105 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
   return window.loadURL(`${service.url}app`);
 }
 
-async function getPrimaryScreenSource(): Promise<DesktopCapturerSource | null> {
-  const primaryDisplayId = String(screen.getPrimaryDisplay().id);
-  const sources = await desktopCapturer.getSources({ types: ['screen'] });
-  return sources.find((source) => source.display_id === primaryDisplayId) ?? sources[0] ?? null;
+function nativeCapturePath(): string {
+  if (!app.isPackaged) return join(projectDirectory, 'wasapi-capture', 'what-i-listen-wasapi.exe');
+  return join(process.resourcesPath, 'wasapi-capture', 'what-i-listen-wasapi.exe');
 }
 
-function configureAudioCapture() {
-  session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
-    try {
-      const source = await getPrimaryScreenSource();
-      if (!source) throw new Error('Aucun écran Windows n’est disponible pour la capture audio.');
-      callback({ video: source, audio: 'loopback' });
-    } catch (error) {
-      overlayService?.setAudioCaptureError(error instanceof Error ? error.message : String(error));
-      callback({});
-    }
-  }, { useSystemPicker: false });
+function parseJsonLine(line: string): Record<string, unknown> | null {
+  try {
+    const value = JSON.parse(line) as unknown;
+    return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
 
-  ipcMain.handle('audio-capture:source-id', async () => {
-    const source = await getPrimaryScreenSource();
-    if (!source) throw new Error('Aucun écran Windows n’est disponible pour la capture audio.');
-    return source.id;
-  });
-  ipcMain.on('audio-capture:levels', (_event, levels: unknown) => {
-    overlayService?.updateAudioLevels(levels);
-  });
-  ipcMain.on('audio-capture:error', (_event, message: unknown) => {
-    overlayService?.setAudioCaptureError(message);
+function audioOutputDevices(value: unknown): AudioOutputDevice[] {
+  if (!value || typeof value !== 'object' || !Array.isArray((value as { devices?: unknown }).devices)) return [];
+  return (value as { devices: unknown[] }).devices.flatMap((device) => {
+    if (!device || typeof device !== 'object') return [];
+    const candidate = device as { id?: unknown; name?: unknown; isDefault?: unknown };
+    if (typeof candidate.id !== 'string' || !candidate.id || typeof candidate.name !== 'string' || !candidate.name) return [];
+    return [{ id: candidate.id, name: candidate.name, isDefault: candidate.isDefault === true }];
   });
 }
 
-function createAudioCaptureWindow() {
-  if (audioCaptureWindow) return Promise.resolve();
+function runNativeCaptureCommand(arguments_: string[]): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(nativeCapturePath(), arguments_, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.setEncoding('utf8');
+    child.stderr.setEncoding('utf8');
+    child.stdout.on('data', (chunk: string) => { stdout += chunk; });
+    child.stderr.on('data', (chunk: string) => { stderr += chunk; });
+    child.once('error', reject);
+    child.once('close', (code) => {
+      const result = parseJsonLine(stdout.trim());
+      if (code === 0 && result) resolve(result);
+      else reject(new Error(
+        (typeof result?.message === 'string' && result.message)
+        || stderr.trim()
+        || `Capture audio native arrêtée (code ${code ?? 'inconnu'}).`,
+      ));
+    });
+  });
+}
 
-  const window = new BrowserWindow({
-    show: false,
-    skipTaskbar: true,
-    webPreferences: {
-      backgroundThrottling: false,
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: audioCapturePreloadPath,
-      sandbox: true,
-    },
+async function listAudioOutputDevices(): Promise<AudioOutputDevice[]> {
+  const response = await runNativeCaptureCommand(['list']);
+  if (response.type !== 'devices') throw new Error('Réponse invalide de la capture audio native.');
+  return audioOutputDevices(response);
+}
+
+function stopNativeAudioCapture(): void {
+  const capture = nativeAudioCapture;
+  nativeAudioCapture = null;
+  if (capture && !capture.killed) capture.kill();
+}
+
+function startNativeAudioCapture(deviceId: string): void {
+  stopNativeAudioCapture();
+  const arguments_ = deviceId ? ['capture', deviceId] : ['capture'];
+  const capture = spawn(nativeCapturePath(), arguments_, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  nativeAudioCapture = capture;
+  let pendingOutput = '';
+  let reportedError = '';
+
+  capture.stdout.setEncoding('utf8');
+  capture.stdout.on('data', (chunk: string) => {
+    pendingOutput += chunk;
+    const lines = pendingOutput.split(/\r?\n/);
+    pendingOutput = lines.pop() ?? '';
+    lines.forEach((line) => {
+      const message = parseJsonLine(line);
+      if (!message) return;
+      if (message.type === 'levels') overlayService?.updateAudioLevels(message);
+      if (message.type === 'error') {
+        reportedError = typeof message.message === 'string' ? message.message : 'La capture WASAPI a échoué.';
+        overlayService?.setAudioCaptureError(reportedError);
+      }
+    });
   });
-  audioCaptureWindow = window;
-  window.on('closed', () => {
-    audioCaptureWindow = null;
-    if (!isQuitting) overlayService?.setAudioCaptureError('La fenêtre de capture audio a été fermée.');
+  capture.once('error', (error) => {
+    if (nativeAudioCapture !== capture) return;
+    nativeAudioCapture = null;
+    overlayService?.setAudioCaptureError(error.message);
   });
-  const service = overlayService;
-  if (!service) throw new Error('Le service local n’est pas encore prêt.');
-  return window.loadURL(`${service.url}audio-capture`);
+  capture.once('exit', (code) => {
+    if (nativeAudioCapture !== capture) return;
+    nativeAudioCapture = null;
+    if (!isQuitting) overlayService?.setAudioCaptureError(reportedError || `La capture WASAPI s’est arrêtée (code ${code ?? 'inconnu'}).`);
+  });
+}
+
+function restartNativeAudioCapture(deviceId: string): Promise<void> {
+  if (audioCaptureRestart) return audioCaptureRestart;
+  audioCaptureRestart = Promise.resolve().then(() => startNativeAudioCapture(deviceId)).finally(() => {
+    audioCaptureRestart = null;
+  });
+  return audioCaptureRestart;
 }
 
 async function showPreviewWindow() {
@@ -185,6 +238,7 @@ function createTray(language: OverlaySettings['language']): void {
 app.whenReady().then(async () => {
   app.setName('What I Listen');
   ipcMain.handle('what-i-listen:open-preview', () => showPreviewWindow());
+  ipcMain.handle('what-i-listen:list-audio-outputs', () => listAudioOutputDevices());
   const backendPath = app.isPackaged
     ? join(
         process.resourcesPath,
@@ -200,9 +254,18 @@ app.whenReady().then(async () => {
     backendPath,
     settingsPath: join(app.getPath('userData'), 'overlay-settings.json'),
   });
+  startNativeAudioCapture(overlayService.settings().audioOutputDeviceId);
   await createWindow({ showOnReady: !overlayService.settings().startHidden });
   createTray(overlayService.settings().language);
-  overlayService.onSettingsChanged(({ language }) => updateTray(language));
+  let audioOutputDeviceId = overlayService.settings().audioOutputDeviceId;
+  overlayService.onSettingsChanged((settings) => {
+    updateTray(settings.language);
+    if (audioOutputDeviceId === settings.audioOutputDeviceId) return;
+    audioOutputDeviceId = settings.audioOutputDeviceId;
+    void restartNativeAudioCapture(audioOutputDeviceId).catch((error: unknown) => {
+      overlayService?.setAudioCaptureError(error instanceof Error ? error.message : String(error));
+    });
+  });
 
   app.on('activate', async () => {
     await showMainWindow();
@@ -216,6 +279,6 @@ app.on('before-quit', (event) => {
   if (isQuitting || !overlayService) return;
   isQuitting = true;
   event.preventDefault();
-  audioCaptureWindow?.destroy();
+  stopNativeAudioCapture();
   overlayService.close().finally(() => app.exit(0));
 });

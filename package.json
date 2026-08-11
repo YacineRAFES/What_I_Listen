@@ -34,6 +34,15 @@
     "asarUnpack": [
       "node_modules/windows-media-sessions/bin/**/*"
     ],
+    "extraResources": [
+      {
+        "from": ".build/wasapi-capture",
+        "to": "wasapi-capture",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "files": [
       ".build/**/*",
       "package.json"

@@ -1,6 +1,8 @@
 const startHidden = document.querySelector<HTMLInputElement>('#start-hidden')!;
 const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!;
 const language = document.querySelector<HTMLSelectElement>('#language')!;
+const audioOutputDevice = document.querySelector<HTMLSelectElement>('#audio-output-device')!;
+const refreshAudioOutputsButton = document.querySelector<HTMLButtonElement>('#refresh-audio-outputs')!;
 const neonPalette = document.querySelector<HTMLSelectElement>('#neon-palette')!;
 const neonPaletteControl = document.querySelector<HTMLElement>('#neon-palette-control')!;
 const previewButton = document.querySelector<HTMLButtonElement>('#open-preview')!;
@@ -10,6 +12,8 @@ const { t } = window.i18n;
 
 let statusKey = 'settings.loading';
 let savedNeonPalette: NeonPalette = 'violet-cyan';
+let savedAudioOutputDeviceId = '';
+let audioOutputs: AudioOutputDevice[] = [];
 
 function setStatus(key: string) {
   statusKey = key;
@@ -36,6 +40,29 @@ async function saveSettings(payload: Partial<OverlaySettings>): Promise<OverlayS
   return response.json() as Promise<OverlaySettings>;
 }
 
+function renderAudioOutputOptions() {
+  const selectedId = savedAudioOutputDeviceId;
+  const knownSelectedDevice = audioOutputs.some((device) => device.id === selectedId);
+  const options = [new Option(t('settings.audio.systemMix'), '')];
+
+  if (selectedId && !knownSelectedDevice) {
+    options.push(new Option(t('settings.audio.savedDevice'), selectedId));
+  }
+  audioOutputs.forEach((device) => {
+    const name = device.isDefault ? `${device.name} — ${t('settings.audio.defaultDevice')}` : device.name;
+    options.push(new Option(name, device.id));
+  });
+
+  audioOutputDevice.replaceChildren(...options);
+  audioOutputDevice.value = selectedId;
+}
+
+async function refreshAudioOutputs() {
+  if (!window.whatIListen?.listAudioOutputs) throw new Error('Audio output devices unavailable');
+  audioOutputs = await window.whatIListen.listAudioOutputs();
+  renderAudioOutputOptions();
+}
+
 async function load() {
   try {
     const response = await fetch('/api/settings', { cache: 'no-store' });
@@ -43,6 +70,13 @@ async function load() {
     const settings = await response.json() as OverlaySettings;
     startHidden.checked = settings.startHidden;
     titleMarquee.checked = settings.titleMarquee !== false;
+    savedAudioOutputDeviceId = settings.audioOutputDeviceId || '';
+    renderAudioOutputOptions();
+    try {
+      await refreshAudioOutputs();
+    } catch {
+      // Les réglages restent utilisables ; le bouton permet une nouvelle tentative.
+    }
     savedNeonPalette = settings.neonPalette || 'violet-cyan';
     neonPalette.value = savedNeonPalette;
     selectSkin(settings.skin || 'luna');
@@ -81,6 +115,42 @@ titleMarquee.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     titleMarquee.disabled = false;
+  }
+});
+
+refreshAudioOutputsButton.addEventListener('click', async () => {
+  refreshAudioOutputsButton.disabled = true;
+  audioOutputDevice.disabled = true;
+  setStatus('settings.audio.searching');
+  try {
+    await refreshAudioOutputs();
+    setStatus('settings.audio.found');
+  } catch {
+    setStatus('settings.audio.listError');
+  } finally {
+    refreshAudioOutputsButton.disabled = false;
+    audioOutputDevice.disabled = false;
+  }
+});
+
+audioOutputDevice.addEventListener('change', async () => {
+  const previousDeviceId = savedAudioOutputDeviceId;
+  const selectedDeviceId = audioOutputDevice.value;
+  audioOutputDevice.disabled = true;
+  refreshAudioOutputsButton.disabled = true;
+  setStatus('settings.saving');
+  try {
+    const settings = await saveSettings({ audioOutputDeviceId: selectedDeviceId });
+    savedAudioOutputDeviceId = settings.audioOutputDeviceId;
+    renderAudioOutputOptions();
+    setStatus(selectedDeviceId ? 'settings.audio.deviceSaved' : 'settings.audio.systemMixSaved');
+  } catch {
+    savedAudioOutputDeviceId = previousDeviceId;
+    renderAudioOutputOptions();
+    setStatus('settings.saveError');
+  } finally {
+    audioOutputDevice.disabled = false;
+    refreshAudioOutputsButton.disabled = false;
   }
 });
 
@@ -152,6 +222,7 @@ previewButton.addEventListener('click', async () => {
 
 document.addEventListener('app-language-change', () => {
   language.value = window.i18n.language;
+  renderAudioOutputOptions();
   setStatus(statusKey);
 });
 
