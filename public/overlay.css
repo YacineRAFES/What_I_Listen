@@ -87,6 +87,9 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 #now-playing[data-visualizer="spectrum"] .spectrum { display: flex; }
 
+/* Le miroir de Spectrum ajoute 16 bandes sans densifier les thèmes existants. */
+#now-playing:not([data-skin="spectrum"]) .spectrum span:nth-child(n + 17) { display: none; }
+
 .spectrum span {
   background:
     repeating-linear-gradient(to top, transparent 0 4px, rgba(9, 14, 23, .68) 4px 5px),
@@ -652,3 +655,87 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing[data-skin="neon"] .spectrum-frame { display: none; }
 #now-playing[data-skin="neon"] .visual-ripples { right: -17px; top: -12px; }
 #now-playing[data-skin="neon"] .visual-orb { background: radial-gradient(circle, var(--neon-secondary-dim), var(--neon-primary-dim) 48%, transparent 70%); right: -24px; top: -18px; }
+
+/* Spectrum : une lecture moderne de Bars and Waves, où l'analyse occupe tout le fond. */
+#now-playing[data-skin="spectrum"] {
+  background: linear-gradient(112deg, #040816, #11112c 56%, #080715);
+  border: 1px solid rgba(111, 190, 255, .64);
+  border-radius: 16px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .52), inset 0 1px rgba(226, 244, 255, .13), 0 0 22px rgba(92, 77, 255, .22);
+  color: #f7f8ff;
+  overflow: hidden;
+  padding: 0;
+}
+
+#now-playing[data-skin="spectrum"] .overlay-content {
+  background: linear-gradient(90deg, rgba(1, 4, 13, .3), rgba(10, 4, 25, .14));
+  gap: 0;
+  isolation: isolate;
+  padding: 12px;
+}
+
+#now-playing[data-skin="spectrum"] .spectrum-frame { display: contents; }
+
+#now-playing[data-skin="spectrum"] .spectrum {
+  bottom: -4px;
+  gap: 3px;
+  height: auto;
+  left: 0;
+  right: 0;
+  top: 0;
+}
+
+#now-playing[data-skin="spectrum"] .spectrum span {
+  background: linear-gradient(to top, #16e8ff 0%, #6275ff 48%, #c45cff 100%);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 0 12px rgba(50, 203, 255, .48), 0 0 24px rgba(166, 69, 255, .24);
+  flex: 1 1 0;
+  min-width: 0;
+  opacity: .9;
+}
+
+#now-playing[data-skin="spectrum"] .spectrum span::after {
+  background: #e7fbff;
+  box-shadow: 0 0 7px #7deaff;
+}
+
+#now-playing[data-skin="spectrum"] .cover-wrap {
+  background: linear-gradient(135deg, #58e7ff, #4d43ad 53%, #d064ff);
+  border: 1px solid rgba(235, 255, 255, .72);
+  border-radius: 13px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .58), 0 0 14px rgba(61, 214, 255, .35);
+  flex-basis: 92px;
+  height: 92px;
+  margin-right: 11px;
+}
+
+#now-playing[data-skin="spectrum"] .text {
+  align-self: stretch;
+  background: linear-gradient(90deg, rgba(2, 5, 17, .88), rgba(5, 6, 23, .7) 70%, rgba(8, 6, 25, .42));
+  border-left: 1px solid rgba(215, 244, 255, .16);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 15px 8px 12px;
+}
+
+#now-playing[data-skin="spectrum"] .label {
+  color: #8eeeff;
+  font-size: 10px;
+  letter-spacing: .15em;
+  margin-bottom: 4px;
+  text-shadow: 0 0 7px rgba(72, 218, 255, .58);
+}
+
+#now-playing[data-skin="spectrum"] #title {
+  color: #fff;
+  font-size: 20px;
+  line-height: 1.14;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, .78);
+}
+
+#now-playing[data-skin="spectrum"] #artist { color: #e0e3ff; font-size: 14px; font-weight: 700; margin-top: 4px; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+#now-playing[data-skin="spectrum"] #album { color: #abb8e9; font-size: 11px; margin-top: 3px; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+#now-playing[data-skin="spectrum"] .status { color: #a9ffca; font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px rgba(125, 255, 191, .46); }
+#now-playing[data-skin="spectrum"] .dot { height: 6px; width: 6px; }
+#now-playing[data-skin="spectrum"].paused .text { background: linear-gradient(90deg, rgba(2, 5, 17, .91), rgba(5, 6, 23, .76) 70%, rgba(8, 6, 25, .54)); }

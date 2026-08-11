@@ -9,6 +9,7 @@ const status = document.querySelector<HTMLElement>('#status')!;
 const { t } = window.i18n;
 const bars = [...document.querySelectorAll<HTMLElement>('.equalizer span')];
 const spectrumBars = [...document.querySelectorAll<HTMLElement>('.spectrum span')];
+const spectrumSourceBandCount = spectrumBars.length / 2;
 const spectrumPeaks = Array(spectrumBars.length).fill(.08);
 const spectrumLevels = Array(spectrumBars.length).fill(.06);
 
@@ -35,7 +36,12 @@ function applyAudioLevels(audio?: AudioLevels) {
     bar.style.setProperty('--bar-level', String(Math.min(1, Math.pow(band, 0.72) * 1.15)));
   });
   spectrumBars.forEach((bar, index) => {
-    const position = Math.round((index / Math.max(1, spectrumBars.length - 1)) * Math.max(0, bands.length - 1));
+    // Les 16 mesures sont affichées de 16 à 1 puis de 1 à 16 afin de former
+    // un spectrum symétrique de 32 bandes, centré sur les basses fréquences.
+    const sourceIndex = index < spectrumSourceBandCount
+      ? spectrumSourceBandCount - 1 - index
+      : index - spectrumSourceBandCount;
+    const position = Math.round((sourceIndex / Math.max(1, spectrumSourceBandCount - 1)) * Math.max(0, bands.length - 1));
     const band = Math.max(0, Math.min(1, Number(bands[position]) || 0));
     const targetLevel = Math.min(1, Math.pow(band, .68) * 1.16);
     const smoothing = targetLevel > spectrumLevels[index] ? .82 : .38;

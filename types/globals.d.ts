@@ -10,7 +10,7 @@ interface AudioOutputDevice {
 }
 
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse';
-type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon';
+type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 
 interface OverlaySettings {
