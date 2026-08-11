@@ -12,10 +12,12 @@ interface AudioOutputDevice {
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse';
 type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
+type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
 
 interface OverlaySettings {
   skin: OverlaySkin;
   neonPalette: NeonPalette;
+  spectrumPalette: SpectrumPalette;
   audioOutputDeviceId: string;
   startHidden: boolean;
   titleMarquee: boolean;
@@ -34,6 +36,7 @@ interface NowPlayingData {
   visualizer: VisualizerMode;
   skin: OverlaySkin;
   neonPalette: NeonPalette;
+  spectrumPalette: SpectrumPalette;
   titleMarquee: boolean;
   language: 'fr' | 'en';
   error?: string;

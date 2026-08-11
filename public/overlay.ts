@@ -108,6 +108,7 @@ function update(data: NowPlayingData) {
   if (data.language) window.i18n.setLanguage(data.language);
   card.dataset.skin = data.skin || 'luna';
   card.dataset.neonPalette = data.neonPalette || 'violet-cyan';
+  card.dataset.spectrumPalette = data.spectrumPalette || 'modern';
   const nextTitleMarqueeEnabled = data.titleMarquee !== false;
   const titleMarqueeChanged = titleMarqueeEnabled !== nextTitleMarqueeEnabled;
   titleMarqueeEnabled = nextTitleMarqueeEnabled;

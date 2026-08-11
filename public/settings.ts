@@ -5,6 +5,8 @@ const audioOutputDevice = document.querySelector<HTMLSelectElement>('#audio-outp
 const refreshAudioOutputsButton = document.querySelector<HTMLButtonElement>('#refresh-audio-outputs')!;
 const neonPalette = document.querySelector<HTMLSelectElement>('#neon-palette')!;
 const neonPaletteControl = document.querySelector<HTMLElement>('#neon-palette-control')!;
+const spectrumPalette = document.querySelector<HTMLSelectElement>('#spectrum-palette')!;
+const spectrumPaletteControl = document.querySelector<HTMLElement>('#spectrum-palette-control')!;
 const previewButton = document.querySelector<HTMLButtonElement>('#open-preview')!;
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const skinOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="skin"]')];
@@ -12,6 +14,7 @@ const { t } = window.i18n;
 
 let statusKey = 'settings.loading';
 let savedNeonPalette: NeonPalette = 'violet-cyan';
+let savedSpectrumPalette: SpectrumPalette = 'modern';
 let savedAudioOutputDeviceId = '';
 let audioOutputs: AudioOutputDevice[] = [];
 
@@ -28,6 +31,8 @@ function selectSkin(skin: string) {
   });
   neonPaletteControl.hidden = skin !== 'neon';
   neonPalette.disabled = skin !== 'neon';
+  spectrumPaletteControl.hidden = skin !== 'spectrum';
+  spectrumPalette.disabled = skin !== 'spectrum';
 }
 
 async function saveSettings(payload: Partial<OverlaySettings>): Promise<OverlaySettings> {
@@ -79,6 +84,8 @@ async function load() {
     }
     savedNeonPalette = settings.neonPalette || 'violet-cyan';
     neonPalette.value = savedNeonPalette;
+    savedSpectrumPalette = settings.spectrumPalette || 'modern';
+    spectrumPalette.value = savedSpectrumPalette;
     selectSkin(settings.skin || 'luna');
     language.value = settings.language || window.i18n.language;
     setStatus('settings.loaded');
@@ -200,6 +207,22 @@ neonPalette.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     neonPalette.disabled = false;
+  }
+});
+
+spectrumPalette.addEventListener('change', async () => {
+  const selectedPalette = spectrumPalette.value as SpectrumPalette;
+  spectrumPalette.disabled = true;
+  setStatus('settings.saving');
+  try {
+    await saveSettings({ spectrumPalette: selectedPalette });
+    savedSpectrumPalette = selectedPalette;
+    setStatus('settings.spectrumPaletteSaved');
+  } catch {
+    spectrumPalette.value = savedSpectrumPalette;
+    setStatus('settings.saveError');
+  } finally {
+    spectrumPalette.disabled = false;
   }
 });
 

@@ -658,13 +658,74 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 /* Spectrum : une lecture moderne de Bars and Waves, où l'analyse occupe tout le fond. */
 #now-playing[data-skin="spectrum"] {
-  background: linear-gradient(112deg, #040816, #11112c 56%, #080715);
-  border: 1px solid rgba(111, 190, 255, .64);
+  --spectrum-background: linear-gradient(112deg, #040816, #11112c 56%, #080715);
+  --spectrum-border: rgba(111, 190, 255, .64);
+  --spectrum-glow: rgba(92, 77, 255, .22);
+  --spectrum-bar: linear-gradient(to top, #16e8ff 0%, #6275ff 48%, #c45cff 100%);
+  --spectrum-bar-glow: rgba(50, 203, 255, .48);
+  --spectrum-bar-glow-secondary: rgba(166, 69, 255, .24);
+  --spectrum-peak: #e7fbff;
+  --spectrum-peak-glow: #7deaff;
+  --spectrum-cover: linear-gradient(135deg, #58e7ff, #4d43ad 53%, #d064ff);
+  --spectrum-cover-glow: rgba(61, 214, 255, .35);
+  --spectrum-label: #8eeeff;
+  --spectrum-label-glow: rgba(72, 218, 255, .58);
+  --spectrum-status: #a9ffca;
+  background: var(--spectrum-background);
+  border: 1px solid var(--spectrum-border);
   border-radius: 16px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, .52), inset 0 1px rgba(226, 244, 255, .13), 0 0 22px rgba(92, 77, 255, .22);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .52), inset 0 1px rgba(226, 244, 255, .13), 0 0 22px var(--spectrum-glow);
   color: #f7f8ff;
   overflow: hidden;
   padding: 0;
+}
+
+#now-playing[data-skin="spectrum"][data-spectrum-palette="ocean-mist"] {
+  --spectrum-background: linear-gradient(112deg, #021927, #07506a 56%, #061a36);
+  --spectrum-border: rgba(108, 249, 238, .7);
+  --spectrum-glow: rgba(38, 226, 218, .27);
+  --spectrum-bar: linear-gradient(to top, #27dbca 0%, #32b9ff 48%, #d9ffff 100%);
+  --spectrum-bar-glow: rgba(50, 228, 255, .55);
+  --spectrum-bar-glow-secondary: rgba(170, 255, 250, .28);
+  --spectrum-peak: #f2ffff;
+  --spectrum-peak-glow: #9afffa;
+  --spectrum-cover: linear-gradient(135deg, #62fff0, #1477bb 53%, #b7ffff);
+  --spectrum-cover-glow: rgba(69, 236, 247, .45);
+  --spectrum-label: #a9fff7;
+  --spectrum-label-glow: rgba(90, 255, 240, .62);
+  --spectrum-status: #d5fff0;
+}
+
+#now-playing[data-skin="spectrum"][data-spectrum-palette="fire-storm"] {
+  --spectrum-background: linear-gradient(112deg, #180408, #4b160d 56%, #230312);
+  --spectrum-border: rgba(255, 155, 79, .74);
+  --spectrum-glow: rgba(255, 57, 84, .28);
+  --spectrum-bar: linear-gradient(to top, #ff3f5c 0%, #ff7d32 48%, #ffe160 100%);
+  --spectrum-bar-glow: rgba(255, 93, 47, .58);
+  --spectrum-bar-glow-secondary: rgba(255, 219, 86, .28);
+  --spectrum-peak: #fff4c7;
+  --spectrum-peak-glow: #ffbd5e;
+  --spectrum-cover: linear-gradient(135deg, #ff5b48, #9d1e47 53%, #ffcf59);
+  --spectrum-cover-glow: rgba(255, 84, 64, .45);
+  --spectrum-label: #ffd58b;
+  --spectrum-label-glow: rgba(255, 150, 74, .62);
+  --spectrum-status: #fff0a4;
+}
+
+#now-playing[data-skin="spectrum"][data-spectrum-palette="scope"] {
+  --spectrum-background: linear-gradient(112deg, #010b05, #082615 56%, #020d07);
+  --spectrum-border: rgba(118, 255, 112, .7);
+  --spectrum-glow: rgba(61, 255, 117, .22);
+  --spectrum-bar: linear-gradient(to top, #18b94c 0%, #75ec62 48%, #d9ff76 100%);
+  --spectrum-bar-glow: rgba(75, 255, 106, .52);
+  --spectrum-bar-glow-secondary: rgba(198, 255, 105, .22);
+  --spectrum-peak: #edffd1;
+  --spectrum-peak-glow: #a5ff73;
+  --spectrum-cover: linear-gradient(135deg, #3bdc6a, #176a3b 53%, #b9f86c);
+  --spectrum-cover-glow: rgba(101, 255, 114, .36);
+  --spectrum-label: #baff8d;
+  --spectrum-label-glow: rgba(130, 255, 105, .58);
+  --spectrum-status: #edffd3;
 }
 
 #now-playing[data-skin="spectrum"] .overlay-content {
@@ -686,24 +747,24 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 }
 
 #now-playing[data-skin="spectrum"] .spectrum span {
-  background: linear-gradient(to top, #16e8ff 0%, #6275ff 48%, #c45cff 100%);
+  background: var(--spectrum-bar);
   border-radius: 4px 4px 0 0;
-  box-shadow: 0 0 12px rgba(50, 203, 255, .48), 0 0 24px rgba(166, 69, 255, .24);
+  box-shadow: 0 0 12px var(--spectrum-bar-glow), 0 0 24px var(--spectrum-bar-glow-secondary);
   flex: 1 1 0;
   min-width: 0;
   opacity: .9;
 }
 
 #now-playing[data-skin="spectrum"] .spectrum span::after {
-  background: #e7fbff;
-  box-shadow: 0 0 7px #7deaff;
+  background: var(--spectrum-peak);
+  box-shadow: 0 0 7px var(--spectrum-peak-glow);
 }
 
 #now-playing[data-skin="spectrum"] .cover-wrap {
-  background: linear-gradient(135deg, #58e7ff, #4d43ad 53%, #d064ff);
+  background: var(--spectrum-cover);
   border: 1px solid rgba(235, 255, 255, .72);
   border-radius: 13px;
-  box-shadow: 0 5px 18px rgba(0, 0, 0, .58), 0 0 14px rgba(61, 214, 255, .35);
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .58), 0 0 14px var(--spectrum-cover-glow);
   flex-basis: 92px;
   height: 92px;
   margin-right: 11px;
@@ -720,11 +781,11 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 }
 
 #now-playing[data-skin="spectrum"] .label {
-  color: #8eeeff;
+  color: var(--spectrum-label);
   font-size: 10px;
   letter-spacing: .15em;
   margin-bottom: 4px;
-  text-shadow: 0 0 7px rgba(72, 218, 255, .58);
+  text-shadow: 0 0 7px var(--spectrum-label-glow);
 }
 
 #now-playing[data-skin="spectrum"] #title {
@@ -736,6 +797,6 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 #now-playing[data-skin="spectrum"] #artist { color: #e0e3ff; font-size: 14px; font-weight: 700; margin-top: 4px; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
 #now-playing[data-skin="spectrum"] #album { color: #abb8e9; font-size: 11px; margin-top: 3px; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
-#now-playing[data-skin="spectrum"] .status { color: #a9ffca; font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px rgba(125, 255, 191, .46); }
+#now-playing[data-skin="spectrum"] .status { color: var(--spectrum-status); font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px currentColor; }
 #now-playing[data-skin="spectrum"] .dot { height: 6px; width: 6px; }
 #now-playing[data-skin="spectrum"].paused .text { background: linear-gradient(90deg, rgba(2, 5, 17, .91), rgba(5, 6, 23, .76) 70%, rgba(8, 6, 25, .54)); }
