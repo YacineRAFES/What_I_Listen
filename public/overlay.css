@@ -642,7 +642,7 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 }
 
 #now-playing[data-skin="neon"] #cover { image-rendering: auto; }
-#now-playing[data-skin="neon"] .text { padding-right: 105px; }
+#now-playing[data-skin="neon"] .text { padding-right: 0; }
 #now-playing[data-skin="neon"] .label { color: var(--neon-primary); font-size: 10px; font-weight: 700; letter-spacing: .17em; margin-bottom: 3px; text-shadow: 0 0 7px var(--neon-primary); }
 #now-playing[data-skin="neon"] #title { color: #fff; font-size: 19px; font-weight: 700; line-height: 1.13; text-shadow: 2px 0 var(--neon-secondary), -1px 0 var(--neon-primary), 0 0 10px rgba(255, 242, 255, .7); }
 #now-playing[data-skin="neon"] #artist { color: var(--neon-artist); font-size: 14px; font-weight: 700; margin-top: 4px; text-shadow: 0 0 6px var(--neon-secondary); }
