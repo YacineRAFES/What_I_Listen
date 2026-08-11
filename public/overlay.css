@@ -168,6 +168,105 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 #now-playing[data-visualizer="pulse"] .visual-orb { display: block; }
 
+.visual-battery {
+  display: none;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+#now-playing[data-visualizer="battery"] .visual-battery { display: block; }
+
+.visual-battery::before {
+  background:
+    radial-gradient(circle at 69% 46%, var(--battery-cyan) 0 3%, transparent 21%),
+    radial-gradient(circle at 64% 52%, var(--battery-violet) 0 9%, transparent 43%),
+    conic-gradient(from 72deg at 66% 48%, transparent 0 9%, var(--battery-pink) 18%, transparent 28% 48%, var(--battery-cyan) 62%, transparent 75%);
+  content: '';
+  filter: blur(1px);
+  inset: -52px;
+  opacity: var(--battery-opacity, .18);
+  position: absolute;
+  transform: scale(var(--battery-scale, .8)) rotate(var(--battery-rotation, 0deg));
+  transition: opacity .1s ease-out, transform .1s ease-out;
+}
+
+.visual-battery::after {
+  background: repeating-radial-gradient(ellipse at 68% 48%, transparent 0 11px, var(--battery-line) 12px 13px, transparent 14px 23px);
+  content: '';
+  inset: -42px -38px -42px 95px;
+  opacity: var(--battery-opacity, .18);
+  position: absolute;
+  transform: scale(var(--battery-ring-scale, .75));
+  transform-origin: 48% 50%;
+  transition: opacity .1s ease-out, transform .1s ease-out;
+}
+
+.visual-battery i {
+  border: 1px solid var(--battery-line);
+  border-radius: 50%;
+  opacity: var(--battery-opacity, .18);
+  position: absolute;
+  transition: opacity .1s ease-out, transform .1s ease-out;
+}
+
+.visual-battery i:nth-child(1) { height: 112px; right: 38px; top: 8px; transform: scale(var(--battery-ring-scale, .75)); width: 112px; }
+.visual-battery i:nth-child(2) { border-color: var(--battery-pink); height: 162px; right: -9px; top: -17px; transform: scale(var(--battery-ring-scale-2, .6)); width: 162px; }
+.visual-battery i:nth-child(3) { border-color: var(--battery-cyan); height: 52px; right: 67px; top: 37px; transform: scale(var(--battery-ring-scale-3, 1)); width: 52px; }
+
+.visual-meter {
+  align-items: end;
+  display: none;
+  gap: 3px;
+  height: 94px;
+  pointer-events: none;
+  position: absolute;
+  right: 13px;
+  top: 15px;
+  width: 132px;
+  z-index: 0;
+}
+
+#now-playing[data-visualizer="meter"] .visual-meter { display: flex; }
+
+.visual-meter i {
+  background:
+    repeating-linear-gradient(to top, rgba(2, 10, 4, .92) 0 4px, transparent 4px 6px),
+    linear-gradient(to top, rgba(29, 118, 50, .25) 0 58%, rgba(177, 126, 29, .25) 59% 78%, rgba(178, 36, 31, .25) 79%);
+  flex: 1 1 0;
+  height: 100%;
+  min-width: 0;
+  position: relative;
+}
+
+.visual-meter b {
+  background:
+    repeating-linear-gradient(to top, transparent 0 4px, rgba(2, 10, 4, .93) 4px 6px),
+    linear-gradient(to top, #39e45d 0 58%, #ffe35d 59% 78%, #ff4c43 79%);
+  bottom: 0;
+  box-shadow: 0 0 7px rgba(95, 255, 129, .42);
+  display: block;
+  height: calc(var(--meter-level, .04) * 100%);
+  left: 0;
+  position: absolute;
+  right: 0;
+  transition: height .08s ease-out;
+}
+
+.visual-meter i::after {
+  background: #efffb5;
+  bottom: calc(var(--meter-peak, .06) * 100% - 1px);
+  box-shadow: 0 0 5px #dfff8f;
+  content: '';
+  height: 2px;
+  left: -1px;
+  position: absolute;
+  right: -1px;
+  transition: bottom .11s linear;
+}
+
 .cover-wrap {
   background: radial-gradient(circle at 30% 25%, #9e4de7, #32125a 72%);
   border-radius: 12px;
@@ -231,6 +330,7 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing.paused .dot, #now-playing.paused .dot::after { animation: none; box-shadow: none; }
 #now-playing.paused .equalizer { opacity: .08; }
 #now-playing.paused .spectrum { opacity: .18; }
+#now-playing.paused .visual-meter { opacity: .2; }
 
 /* Luna est une évocation de l'ère Windows XP, sans reprendre son interface à l'identique. */
 #now-playing[data-skin="luna"] {
@@ -800,3 +900,78 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing[data-skin="spectrum"] .status { color: var(--spectrum-status); font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px currentColor; }
 #now-playing[data-skin="spectrum"] .dot { height: 6px; width: 6px; }
 #now-playing[data-skin="spectrum"].paused .text { background: linear-gradient(90deg, rgba(2, 5, 17, .91), rgba(5, 6, 23, .76) 70%, rgba(8, 6, 25, .54)); }
+
+/* Battery : une interprétation abstraite des ondes et couleurs du visualiseur WMP. */
+#now-playing[data-skin="battery"] {
+  --battery-cyan: rgba(92, 234, 255, .72);
+  --battery-violet: rgba(111, 91, 255, .55);
+  --battery-pink: rgba(255, 86, 206, .66);
+  --battery-line: rgba(192, 246, 255, .56);
+  background:
+    radial-gradient(circle at 84% 15%, rgba(255, 91, 205, .2), transparent 36%),
+    radial-gradient(circle at 70% 78%, rgba(45, 217, 255, .17), transparent 42%),
+    linear-gradient(118deg, #061123, #15154a 56%, #17092d);
+  border: 1px solid rgba(157, 181, 255, .62);
+  border-radius: 17px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .56), 0 0 24px rgba(92, 116, 255, .3), inset 0 1px rgba(237, 246, 255, .14);
+  color: #f6f7ff;
+  overflow: hidden;
+  padding: 0;
+}
+
+#now-playing[data-skin="battery"] .overlay-content {
+  background: linear-gradient(90deg, rgba(2, 8, 20, .2), transparent 67%);
+  gap: 12px;
+  padding: 12px;
+}
+
+#now-playing[data-skin="battery"] .cover-wrap {
+  background: linear-gradient(135deg, #62eaff, #5850ca 53%, #ff61d1);
+  border: 1px solid rgba(234, 252, 255, .76);
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .6), 0 0 15px rgba(94, 225, 255, .4);
+  flex-basis: 92px;
+  height: 92px;
+}
+
+#now-playing[data-skin="battery"] .text {
+  align-self: stretch;
+  background: linear-gradient(90deg, rgba(2, 8, 21, .8), rgba(5, 9, 30, .52) 75%, transparent);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+#now-playing[data-skin="battery"] .label { color: #adf7ff; font-size: 10px; letter-spacing: .16em; margin-bottom: 4px; text-shadow: 0 0 8px rgba(114, 228, 255, .7); }
+#now-playing[data-skin="battery"] #title { color: #fff; font-size: 20px; line-height: 1.14; text-shadow: 0 2px 6px rgba(0, 0, 0, .8); }
+#now-playing[data-skin="battery"] #artist { color: #e2e4ff; font-size: 14px; font-weight: 700; margin-top: 4px; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+#now-playing[data-skin="battery"] #album { color: #b9b9ed; font-size: 11px; margin-top: 3px; text-shadow: 0 1px 4px rgba(0, 0, 0, .8); }
+#now-playing[data-skin="battery"] .status { color: #b9ffd4; font-size: 10px; margin-top: 7px; text-shadow: 0 0 7px rgba(132, 255, 189, .5); }
+#now-playing[data-skin="battery"] .dot { height: 6px; width: 6px; }
+#now-playing[data-skin="battery"].paused .text { background: linear-gradient(90deg, rgba(2, 8, 21, .9), rgba(5, 9, 30, .67) 75%, rgba(8, 7, 27, .24)); }
+
+/* VU Meter : afficheur LED compact, avec crêtes à décroissance douce. */
+#now-playing[data-skin="meter"] {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .018) 0 1px, transparent 1px 4px),
+    linear-gradient(135deg, #0d1710, #07110b 58%, #0d1510);
+  border: 1px solid #496f4e;
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .58), inset 0 1px rgba(230, 255, 225, .08), inset 0 0 0 2px rgba(1, 6, 2, .38);
+  color: #eaffdf;
+  overflow: hidden;
+  padding: 0;
+}
+
+#now-playing[data-skin="meter"] .window-chrome { display: none; }
+#now-playing[data-skin="meter"] .overlay-content { background: linear-gradient(90deg, rgba(1, 10, 3, .18), transparent 74%); gap: 12px; padding: 12px; }
+#now-playing[data-skin="meter"] .cover-wrap { background: linear-gradient(135deg, #1b6330, #0b2814 58%, #635414); border: 1px solid rgba(194, 255, 167, .55); border-radius: 7px; box-shadow: 0 3px 12px rgba(0, 0, 0, .55), 0 0 9px rgba(104, 255, 114, .14); flex-basis: 82px; height: 82px; }
+#now-playing[data-skin="meter"] .text { padding-right: 144px; }
+#now-playing[data-skin="meter"] .label { color: #a7f487; font-family: "Lucida Console", Consolas, monospace; font-size: 10px; letter-spacing: .13em; margin-bottom: 4px; text-shadow: 0 0 6px rgba(128, 255, 129, .42); }
+#now-playing[data-skin="meter"] #title { color: #f5ffe9; font-size: 19px; line-height: 1.14; text-shadow: 0 1px 4px rgba(0, 0, 0, .85); }
+#now-playing[data-skin="meter"] #artist { color: #c9ddc0; font-size: 14px; font-weight: 700; margin-top: 4px; }
+#now-playing[data-skin="meter"] #album { color: #8eac8b; font-size: 10px; margin-top: 3px; }
+#now-playing[data-skin="meter"] .status { color: #c5ff82; font-family: "Lucida Console", Consolas, monospace; font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px rgba(192, 255, 114, .42); }
+#now-playing[data-skin="meter"] .dot { height: 6px; width: 6px; }
+#now-playing[data-skin="meter"] .visual-meter { filter: drop-shadow(0 0 7px rgba(84, 255, 100, .16)); }

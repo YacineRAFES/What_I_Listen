@@ -53,6 +53,15 @@
 .spectrum-preview i { background: linear-gradient(135deg, #53dfff, #5746be 58%, #cb65ff); border: 1px solid rgba(235, 255, 255, .78); border-radius: 5px; box-shadow: 0 2px 7px rgba(0, 0, 0, .5); height: 28px; left: 7px; top: 7px; width: 28px; }
 .spectrum-preview b { background: #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .8); height: 5px; left: 43px; position: absolute; top: 12px; width: 39px; }
 .spectrum-preview em { background: #cfd7ff; box-shadow: 0 1px 4px rgba(0, 0, 0, .8); height: 4px; left: 43px; top: 22px; width: 28px; }
+.battery-preview { background: radial-gradient(circle at 72% 44%, rgba(255, 93, 206, .8), transparent 20%), radial-gradient(circle at 66% 52%, rgba(76, 215, 255, .72), transparent 36%), #071124; border: 1px solid #8a7cff; box-shadow: inset 0 0 14px rgba(83, 109, 255, .42); }
+.battery-preview::before { border: 1px solid rgba(181, 252, 255, .74); border-radius: 50%; content: ''; height: 48px; position: absolute; right: -2px; top: -3px; width: 48px; }
+.battery-preview i { background: linear-gradient(135deg, #5ce9ff, #6653ca 52%, #ff62d0); border: 1px solid rgba(235, 255, 255, .78); border-radius: 5px; box-shadow: 0 2px 7px rgba(0, 0, 0, .5); height: 28px; left: 7px; top: 7px; width: 28px; }
+.battery-preview b { background: #fff; box-shadow: 0 1px 5px rgba(0, 0, 0, .8); height: 5px; left: 43px; top: 12px; width: 39px; }
+.battery-preview em { background: #c7f5ff; box-shadow: 0 1px 4px rgba(0, 0, 0, .8); height: 4px; left: 43px; top: 22px; width: 28px; }
+.meter-preview { background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 4px), linear-gradient(135deg, #102216, #061008 58%, #15180b); border: 1px solid #4d7c55; box-shadow: inset 0 0 10px rgba(71, 231, 93, .14); }
+.meter-preview i { background: linear-gradient(135deg, #56e669, #174021 62%, #b99624); border: 1px solid rgba(213, 255, 174, .65); border-radius: 5px; box-shadow: 0 2px 7px rgba(0, 0, 0, .5); height: 28px; left: 7px; top: 7px; width: 28px; }
+.meter-preview b { background: #efffe8; box-shadow: 0 0 6px rgba(156, 255, 148, .55); height: 5px; left: 43px; top: 11px; width: 39px; }
+.meter-preview em { background: repeating-linear-gradient(90deg, #48e365 0 3px, transparent 3px 5px), linear-gradient(to top, #45e363 0 57%, #ffdf5a 58% 78%, #ff554a 79%); bottom: 7px; box-shadow: 0 0 5px rgba(100, 255, 120, .38); height: 21px; left: 43px; width: 42px; }
 .winamp-preview { background: linear-gradient(145deg, #858b8e, #292e32 48%, #a8adb0); border: 2px solid #24282a; box-shadow: inset 0 0 0 1px #d8dcde; }
 .winamp-preview i { background: #102214; border: 2px inset #768679; height: 27px; left: 7px; top: 8px; width: 27px; }
 .winamp-preview b { background: #83e579; box-shadow: 0 0 5px #83e579; height: 5px; left: 42px; top: 12px; width: 39px; }

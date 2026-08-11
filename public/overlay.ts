@@ -9,9 +9,12 @@ const status = document.querySelector<HTMLElement>('#status')!;
 const { t } = window.i18n;
 const bars = [...document.querySelectorAll<HTMLElement>('.equalizer span')];
 const spectrumBars = [...document.querySelectorAll<HTMLElement>('.spectrum span')];
+const meterBars = [...document.querySelectorAll<HTMLElement>('.visual-meter i')];
 const spectrumSourceBandCount = spectrumBars.length / 2;
 const spectrumPeaks = Array(spectrumBars.length).fill(.08);
 const spectrumLevels = Array(spectrumBars.length).fill(.06);
+const meterPeaks = Array(meterBars.length).fill(.06);
+const meterLevels = Array(meterBars.length).fill(.04);
 
 let previousCoverUrl = '';
 let latestData: NowPlayingData | null = null;
@@ -51,6 +54,16 @@ function applyAudioLevels(audio?: AudioLevels) {
     bar.style.setProperty('--spectrum-peak', `${(spectrumPeaks[index] * 100).toFixed(2)}%`);
     bar.style.setProperty('--spectrum-empty', `${(100 - spectrumLevels[index] * 100).toFixed(2)}%`);
   });
+  meterBars.forEach((bar, index) => {
+    const position = Math.round((index / Math.max(1, meterBars.length - 1)) * Math.max(0, bands.length - 1));
+    const band = Math.max(0, Math.min(1, Number(bands[position]) || 0));
+    const targetLevel = Math.min(1, Math.pow(band, .72) * 1.12);
+    const smoothing = targetLevel > meterLevels[index] ? .8 : .24;
+    meterLevels[index] += (targetLevel - meterLevels[index]) * smoothing;
+    meterPeaks[index] = Math.max(meterLevels[index], meterPeaks[index] - .026);
+    bar.style.setProperty('--meter-level', meterLevels[index].toFixed(3));
+    bar.style.setProperty('--meter-peak', meterPeaks[index].toFixed(3));
+  });
   card.style.setProperty('--audio-opacity', String(0.1 + intensity * 0.38));
   card.style.setProperty('--spectrum-opacity', String(.48 + intensity * .5));
   const rippleOpacity = 0.08 + intensity * 0.58;
@@ -62,11 +75,19 @@ function applyAudioLevels(audio?: AudioLevels) {
   card.style.setProperty('--ripple-scale-3', String(1.15 + intensity * 1.55));
   card.style.setProperty('--pulse-opacity', String(0.08 + intensity * 0.62));
   card.style.setProperty('--pulse-scale', String(0.65 + intensity * 0.7));
+  card.style.setProperty('--battery-opacity', String(0.12 + intensity * 0.7));
+  card.style.setProperty('--battery-scale', String(0.72 + intensity * 0.62));
+  card.style.setProperty('--battery-rotation', `${((level - .5) * 13).toFixed(2)}deg`);
+  card.style.setProperty('--battery-ring-scale', String(0.55 + intensity * 1.25));
+  card.style.setProperty('--battery-ring-scale-2', String((0.55 + intensity * 1.25) * .8));
+  card.style.setProperty('--battery-ring-scale-3', String((0.55 + intensity * 1.25) * 1.35));
 }
 
 function flattenAudioLevels() {
   spectrumLevels.fill(0);
   spectrumPeaks.fill(0);
+  meterLevels.fill(0);
+  meterPeaks.fill(0);
   applyAudioLevels();
 }
 
