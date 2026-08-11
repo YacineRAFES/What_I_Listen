@@ -22,8 +22,11 @@ let titleMarqueeAnimationFrame: number | null = null;
 let titleMarqueeEnabled = true;
 
 function applyAudioLevels(audio?: AudioLevels) {
-  const bands = Array.isArray(audio?.bands) ? audio.bands : [];
-  const level = Math.max(0, Math.min(1, Number(audio?.level) || 0));
+  // La sortie Windows peut contenir YouTube, un jeu, etc. Le spectrum ne doit
+  // bouger que pendant la lecture du morceau suivi par l'overlay (Deezer).
+  const liveAudio = latestData?.available && latestData.playback === 'playing' ? audio : undefined;
+  const bands = Array.isArray(liveAudio?.bands) ? liveAudio.bands : [];
+  const level = Math.max(0, Math.min(1, Number(liveAudio?.level) || 0));
   const intensity = Math.max(0.06, Math.pow(level, 0.66));
 
   bars.forEach((bar, index) => {
@@ -53,6 +56,12 @@ function applyAudioLevels(audio?: AudioLevels) {
   card.style.setProperty('--ripple-scale-3', String(1.15 + intensity * 1.55));
   card.style.setProperty('--pulse-opacity', String(0.08 + intensity * 0.62));
   card.style.setProperty('--pulse-scale', String(0.65 + intensity * 0.7));
+}
+
+function flattenAudioLevels() {
+  spectrumLevels.fill(0);
+  spectrumPeaks.fill(0);
+  applyAudioLevels();
 }
 
 function updateTitleMarquee() {
@@ -98,6 +107,7 @@ function update(data: NowPlayingData) {
   titleMarqueeEnabled = nextTitleMarqueeEnabled;
   if (titleMarqueeChanged) scheduleTitleMarquee();
   if (!data.available) {
+    flattenAudioLevels();
     if (!debugMode) {
       card.classList.remove('visible');
       return;
@@ -120,6 +130,8 @@ function update(data: NowPlayingData) {
   status.textContent = data.playback === 'playing' ? t('overlay.playing') : t('overlay.paused');
   card.classList.toggle('paused', data.playback !== 'playing');
   card.dataset.visualizer = data.visualizer || 'bars';
+
+  if (data.playback !== 'playing') flattenAudioLevels();
 
   if (previewMode) {
     status.textContent = t('overlay.preview');
