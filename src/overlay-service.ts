@@ -590,6 +590,9 @@ export async function startOverlayService({
       case '/app.css':
         await sendStatic(response, 'app.css', 'text/css; charset=utf-8');
         break;
+      case '/app-icon.svg':
+        await sendStatic(response, 'app-icon.svg', 'image/svg+xml');
+        break;
       case '/app.js':
         await sendStatic(response, 'app.js', 'text/javascript; charset=utf-8');
         break;

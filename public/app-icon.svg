@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title id="title">What I Listen</title>
+  <defs>
+    <linearGradient id="background" x1="28" y1="20" x2="228" y2="236" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#25133b"/>
+      <stop offset="1" stop-color="#0d0a18"/>
+    </linearGradient>
+    <linearGradient id="spectrum" x1="38" y1="58" x2="219" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#cc7cff"/>
+      <stop offset=".48" stop-color="#8d4fff"/>
+      <stop offset="1" stop-color="#249dff"/>
+    </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="url(#background)"/>
+  <rect x="7" y="7" width="242" height="242" rx="52" fill="none" stroke="#d8b4ff" stroke-opacity=".13" stroke-width="2"/>
+  <g fill="url(#spectrum)" filter="url(#glow)">
+    <rect x="31" y="55" width="16" height="100" rx="8"/>
+    <rect x="54" y="72" width="16" height="116" rx="8"/>
+    <rect x="77" y="89" width="16" height="99" rx="8"/>
+    <rect x="100" y="108" width="16" height="89" rx="8"/>
+    <rect x="123" y="139" width="16" height="69" rx="8"/>
+    <rect x="146" y="108" width="16" height="89" rx="8"/>
+    <rect x="169" y="89" width="16" height="99" rx="8"/>
+    <rect x="192" y="72" width="16" height="116" rx="8"/>
+    <rect x="215" y="55" width="16" height="100" rx="8"/>
+  </g>
+</svg>

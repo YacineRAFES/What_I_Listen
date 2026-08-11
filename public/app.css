@@ -18,6 +18,8 @@ body {
 
 .app-shell { max-width: 920px; margin: 0 auto; padding: 38px; }
 .app-header, .guide-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.app-brand { display: flex; align-items: center; gap: 13px; }
+.app-logo { width: 50px; height: 50px; flex: 0 0 auto; }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .eyebrow { margin: 0 0 5px; color: #c9a8ec; font-size: 12px; font-weight: 800; letter-spacing: .13em; }
 h1, h2, p { margin-top: 0; }
@@ -63,5 +65,6 @@ button:hover { background: #aa66e6; }
   .track-card { align-items: flex-start; }
   .cover { width: 100px; height: 100px; }
   .app-header, .guide-heading { align-items: flex-start; flex-direction: column; }
+  .app-logo { width: 44px; height: 44px; }
   .main-nav { overflow-x: auto; width: 100%; }
 }

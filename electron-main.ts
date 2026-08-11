@@ -6,6 +6,7 @@ import { startOverlayService, type OverlayService } from './src/overlay-service.
 
 const projectDirectory = dirname(fileURLToPath(import.meta.url));
 const preloadPath = join(projectDirectory, 'preload.cjs');
+const appIconPath = join(projectDirectory, 'public', 'app-icon.svg');
 
 let mainWindow: ElectronBrowserWindow | null = null;
 let previewWindow: ElectronBrowserWindow | null = null;
@@ -58,6 +59,7 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
     minHeight: 590,
     show: false,
     title: 'What I Listen — Deezer',
+    icon: nativeImage.createFromPath(appIconPath),
     backgroundColor: '#100b18',
     webPreferences: {
       contextIsolation: true,
@@ -200,6 +202,7 @@ async function showPreviewWindow() {
     resizable: false,
     maximizable: false,
     title: 'Aperçu — What I Listen',
+    icon: nativeImage.createFromPath(appIconPath),
     backgroundColor: '#100b18',
     webPreferences: {
       backgroundThrottling: false,
@@ -229,8 +232,7 @@ function updateTray(language: OverlaySettings['language']): void {
 }
 
 function createTray(language: OverlaySettings['language']): void {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b877ff"/><stop offset="1" stop-color="#64e58b"/></linearGradient></defs><rect width="32" height="32" rx="8" fill="#1b1029"/><path d="M20 7v12.2a4.5 4.5 0 1 1-2-3.75V10l8-2v9.2a4.5 4.5 0 1 1-2-3.75V5z" fill="url(#g)"/></svg>`;
-  tray = new Tray(nativeImage.createFromDataURL(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`));
+  tray = new Tray(nativeImage.createFromPath(appIconPath).resize({ width: 32, height: 32 }));
   updateTray(language);
   tray.on('click', () => { void showMainWindow(); });
 }
