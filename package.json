@@ -19,6 +19,7 @@
     "node": ">=20.19.0"
   },
   "dependencies": {
+    "electron-updater": "^6.6.2",
     "windows-media-sessions": "1.0.3"
   },
   "devDependencies": {
@@ -31,6 +32,11 @@
   "build": {
     "appId": "fr.whatilisten.deezer",
     "productName": "What I Listen",
+    "publish": {
+      "provider": "github",
+      "owner": "YacineRAFES",
+      "repo": "What_I_Listen"
+    },
     "asarUnpack": [
       "node_modules/windows-media-sessions/bin/**/*"
     ],

@@ -22,7 +22,9 @@
     "releaseName": "What I Listen",
     "autoGenerate": true,
     "assets": [
-      "dist/*.exe"
+      "dist/*.exe",
+      "dist/*.blockmap",
+      "dist/latest.yml"
     ]
   },
   "hooks": {

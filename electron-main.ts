@@ -1,8 +1,11 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray, type BrowserWindow as ElectronBrowserWindow, type Tray as ElectronTray } from 'electron';
+import electronUpdater from 'electron-updater';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startOverlayService, type OverlayService } from './src/overlay-service.js';
+
+const { autoUpdater } = electronUpdater;
 
 const projectDirectory = dirname(fileURLToPath(import.meta.url));
 const preloadPath = join(projectDirectory, 'preload.cjs');
@@ -15,6 +18,9 @@ let overlayService: OverlayService | null = null;
 let tray: ElectronTray | null = null;
 let isQuitting = false;
 let audioCaptureRestart: Promise<void> | null = null;
+let updatePromptOpen = false;
+
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 interface AudioOutputDevice {
   id: string;
@@ -28,12 +34,22 @@ const nativeTranslations = {
     show: 'Afficher What I Listen',
     preview: 'Ouvrir l’aperçu en direct',
     quit: 'Quitter',
+    updateReadyTitle: 'Mise à jour prête',
+    updateReadyMessage: 'Une nouvelle version de What I Listen a été téléchargée.',
+    updateReadyDetail: 'Redémarrez l’application pour terminer son installation, ou fermez-la plus tard pour l’installer automatiquement.',
+    restartAndInstall: 'Redémarrer et installer',
+    installLater: 'Plus tard',
   },
   en: {
     windowTitle: 'What I Listen — Deezer',
     show: 'Show What I Listen',
     preview: 'Open live preview',
     quit: 'Quit',
+    updateReadyTitle: 'Update ready',
+    updateReadyMessage: 'A new version of What I Listen has been downloaded.',
+    updateReadyDetail: 'Restart the application to finish installing it, or close it later to install automatically.',
+    restartAndInstall: 'Restart and install',
+    installLater: 'Later',
   },
 };
 
@@ -254,6 +270,55 @@ function createTray(language: OverlaySettings['language']): void {
   tray.on('click', () => { void showMainWindow(); });
 }
 
+async function installDownloadedUpdate(): Promise<void> {
+  if (isQuitting) return;
+  isQuitting = true;
+  stopNativeAudioCapture();
+  try {
+    await overlayService?.close();
+  } finally {
+    autoUpdater.quitAndInstall(false, true);
+  }
+}
+
+function startAutomaticUpdates(language: OverlaySettings['language']): void {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('update-downloaded', async () => {
+    if (updatePromptOpen || isQuitting) return;
+    updatePromptOpen = true;
+    try {
+      const currentLanguage = overlayService?.settings().language ?? language;
+      const result = await dialog.showMessageBox({
+        type: 'info',
+        title: nativeText('updateReadyTitle', currentLanguage),
+        message: nativeText('updateReadyMessage', currentLanguage),
+        detail: nativeText('updateReadyDetail', currentLanguage),
+        buttons: [nativeText('restartAndInstall', currentLanguage), nativeText('installLater', currentLanguage)],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+      });
+      if (result.response === 0) await installDownloadedUpdate();
+    } finally {
+      updatePromptOpen = false;
+    }
+  });
+  const checkForUpdates = async () => {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      await result?.downloadPromise;
+    } catch (error: unknown) {
+      console.warn('La vérification des mises à jour a échoué :', error);
+    }
+  };
+  void checkForUpdates();
+  const updateCheckTimer = setInterval(() => { void checkForUpdates(); }, UPDATE_CHECK_INTERVAL_MS);
+  updateCheckTimer.unref();
+}
+
 app.whenReady().then(async () => {
   app.setName('What I Listen');
   ipcMain.handle('what-i-listen:open-preview', () => showPreviewWindow());
@@ -276,6 +341,7 @@ app.whenReady().then(async () => {
   startNativeAudioCapture(overlayService.settings().audioOutputDeviceId);
   await createWindow({ showOnReady: !overlayService.settings().startHidden });
   createTray(overlayService.settings().language);
+  startAutomaticUpdates(overlayService.settings().language);
   let audioOutputDeviceId = overlayService.settings().audioOutputDeviceId;
   overlayService.onSettingsChanged((settings) => {
     updateTray(settings.language);
