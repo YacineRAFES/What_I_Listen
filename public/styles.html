@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title data-i18n="styles.title">Styles de l’overlay — What I Listen</title>
+    <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/settings.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div class="app-brand">
+          <img class="app-logo" src="/app-icon.svg" alt="" aria-hidden="true">
+          <div>
+            <p class="eyebrow">WHAT I LISTEN</p>
+            <h1>What I Listen <span>— Deezer</span></h1>
+          </div>
+        </div>
+      </header>
+
+      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app" data-i18n="nav.home">Accueil</a>
+        <a class="active" href="/styles" data-i18n="nav.styles">Styles</a>
+        <a href="/settings" data-i18n="nav.settings">Paramètres</a>
+      </nav>
+
+      <section class="page-heading">
+        <p class="eyebrow" data-i18n="styles.eyebrow">APPARENCE</p>
+        <h2 data-i18n="styles.heading">Styles de l’overlay</h2>
+        <p class="intro" data-i18n="styles.intro">Personnalise l’habillage affiché dans OBS et vérifie immédiatement le résultat.</p>
+      </section>
+
+      <section class="settings-card skin-card">
+        <div class="setting-copy">
+          <h3 data-i18n="settings.skin.title">Style de l’overlay</h3>
+          <p data-i18n="settings.skin.description">Choisis l’habillage affiché dans OBS. Le changement est immédiat dans l’aperçu et dans OBS.</p>
+        </div>
+        <fieldset class="skin-options" data-i18n-aria-label="settings.skin.title" aria-label="Style de l’overlay">
+          <legend class="sr-only" data-i18n="settings.skin.title">Style de l’overlay</legend>
+          <label class="skin-option" data-skin-option="luna">
+            <input type="radio" name="skin" value="luna">
+            <span class="skin-preview luna-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.luna">Luna</strong><small data-i18n="settings.skin.lunaDescription">Bleu Windows XP, brillant et nostalgique.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="aura">
+            <input type="radio" name="skin" value="aura">
+            <span class="skin-preview aura-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.aura">Aura</strong><small data-i18n="settings.skin.auraDescription">Le style sombre et lumineux original.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="spectrum">
+            <input type="radio" name="skin" value="spectrum">
+            <span class="skin-preview spectrum-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.spectrum">Spectrum</strong><small data-i18n="settings.skin.spectrumDescription">Spectrum cyan et violet en grand format, derrière la pochette.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="battery">
+            <input type="radio" name="skin" value="battery">
+            <span class="skin-preview battery-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.battery">Battery</strong><small data-i18n="settings.skin.batteryDescription">Halos et ondes colorées qui réagissent à la musique.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="meter">
+            <input type="radio" name="skin" value="meter">
+            <span class="skin-preview meter-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.meter">VU Meter LED</strong><small data-i18n="settings.skin.meterDescription">Colonnes vertes, jaunes et rouges avec des crêtes lumineuses.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="oscilloscope">
+            <input type="radio" name="skin" value="oscilloscope">
+            <span class="skin-preview oscilloscope-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.oscilloscope">Oscilloscope</strong><small data-i18n="settings.skin.oscilloscopeDescription">Écran CRT vert avec une trace audio lumineuse.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="winamp">
+            <input type="radio" name="skin" value="winamp">
+            <span class="skin-preview winamp-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.winamp">Winamp Classic</strong><small data-i18n="settings.skin.winampDescription">Métal, afficheur vert et esprit lecteur MP3.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="glass">
+            <input type="radio" name="skin" value="glass">
+            <span class="skin-preview glass-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.glass">Glass</strong><small data-i18n="settings.skin.glassDescription">Verre bleuté et lecteur Windows aérien.</small></span>
+          </label>
+          <label class="skin-option" data-skin-option="neon">
+            <input type="radio" name="skin" value="neon">
+            <span class="skin-preview neon-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-choice"><strong data-i18n="settings.skin.neon">Néon rétro</strong><small data-i18n="settings.skin.neonDescription">Grille synthwave, cyan et magenta, avec barres lumineuses.</small></span>
+          </label>
+        </fieldset>
+        <div class="skin-preview-action">
+          <div>
+            <strong data-i18n="settings.preview.title">Aperçu en direct</strong>
+            <small data-i18n="settings.preview.description">Ouvre une fenêtre qui reproduit le thème sélectionné dans OBS.</small>
+          </div>
+          <button id="open-preview" type="button" data-i18n="settings.preview.open">Ouvrir l’aperçu</button>
+        </div>
+        <div id="neon-palette-control" class="neon-palette-control" hidden>
+          <div class="setting-copy">
+            <h4 data-i18n="settings.neonPalette.title">Palette néon</h4>
+            <p data-i18n="settings.neonPalette.description">Change les couleurs du thème néon sans modifier sa mise en page.</p>
+          </div>
+          <label class="neon-palette-select" for="neon-palette">
+            <span class="sr-only" data-i18n="settings.neonPalette.label">Palette néon</span>
+            <select id="neon-palette">
+              <option value="violet-cyan" data-i18n="settings.neonPalette.violetCyan">Violet et cyan</option>
+              <option value="sunset" data-i18n="settings.neonPalette.sunset">Coucher de soleil</option>
+              <option value="laser" data-i18n="settings.neonPalette.laser">Laser vert</option>
+            </select>
+          </label>
+        </div>
+        <div id="spectrum-palette-control" class="spectrum-palette-control" hidden>
+          <div class="setting-copy">
+            <h4 data-i18n="settings.spectrumPalette.title">Palette Spectrum</h4>
+            <p data-i18n="settings.spectrumPalette.description">Choisis une variation inspirée de Bars and Waves.</p>
+          </div>
+          <label class="spectrum-palette-select" for="spectrum-palette">
+            <span class="sr-only" data-i18n="settings.spectrumPalette.label">Palette Spectrum</span>
+            <select id="spectrum-palette">
+              <option value="modern" data-i18n="settings.spectrumPalette.modern">Moderne</option>
+              <option value="ocean-mist" data-i18n="settings.spectrumPalette.oceanMist">Ocean Mist</option>
+              <option value="fire-storm" data-i18n="settings.spectrumPalette.fireStorm">Fire Storm</option>
+              <option value="scope" data-i18n="settings.spectrumPalette.scope">Scope</option>
+            </select>
+          </label>
+        </div>
+      </section>
+      <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des styles…</p>
+    </main>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/styles.js"></script>
+  </body>
+</html>

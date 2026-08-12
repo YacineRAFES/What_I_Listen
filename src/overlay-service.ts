@@ -676,6 +676,13 @@ export async function startOverlayService({
       case '/settings.js':
         await sendStatic(response, 'settings.js', 'text/javascript; charset=utf-8');
         break;
+      case '/styles':
+      case '/styles.html':
+        await sendStatic(response, 'styles.html', 'text/html; charset=utf-8');
+        break;
+      case '/styles.js':
+        await sendStatic(response, 'styles.js', 'text/javascript; charset=utf-8');
+        break;
       case '/api/now-playing':
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(stateForClient()));
         break;
