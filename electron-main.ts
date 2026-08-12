@@ -107,11 +107,6 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
   window.once('ready-to-show', () => {
     if (showOnReady) window.show();
   });
-  window.on('close', (event) => {
-    if (isQuitting) return;
-    event.preventDefault();
-    window.hide();
-  });
   window.on('closed', () => { mainWindow = null; });
   const service = overlayService;
   if (!service) throw new Error('Le service local n’est pas encore prêt.');
