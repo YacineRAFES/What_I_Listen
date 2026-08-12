@@ -34,6 +34,18 @@ const coverRefreshDelayMs = 5000;
 const deezerSearchUrl = 'https://api.deezer.com/search/track';
 const deezerRequestTimeoutMs = 6000;
 const maxCoverBytes = 5 * 1024 * 1024;
+const maxCoverBase64Length = Math.ceil(maxCoverBytes * 4 / 3);
+const maxAudioSubscribers = 8;
+const securityHeaders = Object.freeze({
+  'Content-Security-Policy': "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'",
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Permissions-Policy': 'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
+  'Referrer-Policy': 'no-referrer',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-DNS-Prefetch-Control': 'off',
+});
 
 export interface StartOverlayOptions {
   host?: string;
@@ -89,8 +101,24 @@ function errorMessage(error: unknown): string {
 }
 
 function parsePort(raw: unknown, fallback: number): number {
-  const value = Number.parseInt(typeof raw === 'string' ? raw : '', 10);
+  const value = typeof raw === 'number'
+    ? raw
+    : Number.parseInt(typeof raw === 'string' ? raw : '', 10);
   return Number.isInteger(value) && value > 0 && value < 65536 ? value : fallback;
+}
+
+function isLoopbackHost(host: string): boolean {
+  return host === '127.0.0.1' || host === '::1' || host === 'localhost';
+}
+
+function localOrigin(host: string, port: number): string {
+  const urlHost = host.includes(':') ? `[${host}]` : host;
+  return `http://${urlHost}:${port}`;
+}
+
+function requestHeader(request: IncomingMessage, name: string): string {
+  const value = request.headers[name];
+  return typeof value === 'string' ? value : '';
 }
 
 function escapeXml(value: string): string {
@@ -236,6 +264,9 @@ export async function startOverlayService({
   backendPath,
   settingsPath,
 }: StartOverlayOptions = {}): Promise<OverlayService> {
+  if (!isLoopbackHost(host)) throw new Error('Le service overlay ne peut écouter que sur la machine locale.');
+  const servicePort = parsePort(port, 38491);
+  const serviceOrigin = localOrigin(host, servicePort);
   const savedSettings = await loadSettings(settingsPath);
   const state: ServiceState = {
     available: false,
@@ -505,14 +536,14 @@ export async function startOverlayService({
     response.writeHead(status, {
       'Cache-Control': 'no-store',
       'Content-Type': type,
-      'X-Content-Type-Options': 'nosniff',
+      ...securityHeaders,
     });
     response.end(body);
   }
 
   function sendCover(response: ServerResponse): void {
-    const match = /^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/i.exec(state.thumbnail);
-    if (match) {
+    const match = /^data:(image\/(?:avif|jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/i.exec(state.thumbnail);
+    if (match && match[2]!.length <= maxCoverBase64Length) {
       send(response, 200, match[1]!, Buffer.from(match[2]!, 'base64'));
       return;
     }
@@ -529,8 +560,20 @@ export async function startOverlayService({
   }
 
   const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
-    const url = new URL(request.url ?? '/', `http://${host}:${port}`);
+    let url: URL;
+    try {
+      url = new URL(request.url ?? '/', serviceOrigin);
+    } catch {
+      send(response, 400, 'text/plain; charset=utf-8', 'URL invalide.');
+      return;
+    }
     if (request.method === 'POST' && url.pathname === '/api/settings') {
+      const origin = requestHeader(request, 'origin');
+      const contentType = requestHeader(request, 'content-type').split(';', 1)[0]?.trim().toLowerCase();
+      if ((origin && origin !== serviceOrigin) || contentType !== 'application/json') {
+        send(response, 403, 'text/plain; charset=utf-8', 'Origine ou type de requête non autorisé.');
+        return;
+      }
       try {
         const payload = await readJsonBody(request) as SettingsUpdate;
         const updatesStartHidden = Object.hasOwn(payload, 'startHidden');
@@ -567,11 +610,15 @@ export async function startOverlayService({
       return;
     }
     if (request.method === 'GET' && url.pathname === '/api/audio-stream') {
+      if (audioSubscribers.size >= maxAudioSubscribers) {
+        send(response, 503, 'text/plain; charset=utf-8', 'Trop de flux audio ouverts.');
+        return;
+      }
       response.writeHead(200, {
         'Cache-Control': 'no-cache, no-transform',
         Connection: 'keep-alive',
         'Content-Type': 'text/event-stream; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff',
+        ...securityHeaders,
       });
       response.write(`retry: 2000\nevent: levels\ndata: ${JSON.stringify(audioForClient())}\n\n`);
       audioSubscribers.add(response);
@@ -583,7 +630,10 @@ export async function startOverlayService({
       return;
     }
     if (request.method === 'HEAD') {
-      response.writeHead(200);
+      response.writeHead(200, {
+        'Cache-Control': 'no-store',
+        ...securityHeaders,
+      });
       response.end();
       return;
     }
@@ -663,7 +713,7 @@ export async function startOverlayService({
 
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
-    server.listen(port, host, () => {
+    server.listen(servicePort, host, () => {
       server.off('error', reject);
       isListening = true;
       resolve();
@@ -672,8 +722,8 @@ export async function startOverlayService({
 
   return {
     host,
-    port,
-    url: `http://${host}:${port}/`,
+    port: servicePort,
+    url: `${serviceOrigin}/`,
     state: stateForClient,
     settings: settingsForClient,
     updateAudioLevels,

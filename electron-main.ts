@@ -43,6 +43,21 @@ function nativeText(key: keyof typeof nativeTranslations.fr, language: OverlaySe
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
+function lockWindowToOverlay(window: ElectronBrowserWindow, serviceUrl: string): void {
+  const allowedOrigin = new URL(serviceUrl).origin;
+  const blockExternalNavigation = (event: Electron.Event, targetUrl: string) => {
+    try {
+      if (new URL(targetUrl).origin !== allowedOrigin) event.preventDefault();
+    } catch {
+      event.preventDefault();
+    }
+  };
+
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', blockExternalNavigation);
+  window.webContents.on('will-redirect', blockExternalNavigation);
+}
+
 function showMainWindow() {
   if (!mainWindow) return createWindow({ showOnReady: true });
   if (mainWindow.isMinimized()) mainWindow.restore();
@@ -81,6 +96,7 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
   window.on('closed', () => { mainWindow = null; });
   const service = overlayService;
   if (!service) throw new Error('Le service local n’est pas encore prêt.');
+  lockWindowToOverlay(window, service.url);
   return window.loadURL(`${service.url}app`);
 }
 
@@ -216,6 +232,7 @@ async function showPreviewWindow() {
   previewWindow.on('closed', () => { previewWindow = null; });
   const service = overlayService;
   if (!service) throw new Error('Le service local n’est pas encore prêt.');
+  lockWindowToOverlay(previewWindow, service.url);
   await previewWindow.loadURL(`${service.url}?debug&preview`);
 }
 
