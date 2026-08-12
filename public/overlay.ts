@@ -10,11 +10,15 @@ const { t } = window.i18n;
 const bars = [...document.querySelectorAll<HTMLElement>('.equalizer span')];
 const spectrumBars = [...document.querySelectorAll<HTMLElement>('.spectrum span')];
 const meterBars = [...document.querySelectorAll<HTMLElement>('.visual-meter i')];
+const oscilloscopeTrace = document.querySelector<SVGPathElement>('#oscilloscope-trace')!;
 const spectrumSourceBandCount = spectrumBars.length / 2;
 const spectrumPeaks = Array(spectrumBars.length).fill(.08);
 const spectrumLevels = Array(spectrumBars.length).fill(.06);
 const meterPeaks = Array(meterBars.length).fill(.06);
 const meterLevels = Array(meterBars.length).fill(.04);
+const oscilloscopePointCount = 33;
+const oscilloscopeLevels = Array(oscilloscopePointCount).fill(0);
+let oscilloscopePhase = 0;
 
 let previousCoverUrl = '';
 let latestData: NowPlayingData | null = null;
@@ -64,6 +68,33 @@ function applyAudioLevels(audio?: AudioLevels) {
     bar.style.setProperty('--meter-level', meterLevels[index].toFixed(3));
     bar.style.setProperty('--meter-peak', meterPeaks[index].toFixed(3));
   });
+  oscilloscopePhase += .16 + level * .42;
+  const oscilloscopePoints = Array.from({ length: oscilloscopePointCount }, (_, index) => {
+    const progress = index / Math.max(1, oscilloscopePointCount - 1);
+    const bandPosition = progress * Math.max(0, bands.length - 1);
+    const lowerBand = Math.floor(bandPosition);
+    const upperBand = Math.min(bands.length - 1, lowerBand + 1);
+    const blend = bandPosition - lowerBand;
+    const lowerLevel = Math.max(0, Math.min(1, Number(bands[lowerBand]) || 0));
+    const upperLevel = Math.max(0, Math.min(1, Number(bands[upperBand]) || 0));
+    const targetLevel = Math.pow(lowerLevel + (upperLevel - lowerLevel) * blend, .72);
+    const smoothing = targetLevel > oscilloscopeLevels[index] ? .72 : .26;
+    oscilloscopeLevels[index] += (targetLevel - oscilloscopeLevels[index]) * smoothing;
+    const carrier = Math.sin(oscilloscopePhase + index * 1.43);
+    const harmonic = Math.sin(oscilloscopePhase * 1.62 + index * .57) * .25;
+    const x = progress * 160;
+    const y = 50 + (carrier + harmonic) * oscilloscopeLevels[index] * 31;
+    return { x, y };
+  });
+  const path = oscilloscopePoints.reduce((trace, point, index) => {
+    if (index === 0) return `M ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+    const previous = oscilloscopePoints[index - 1]!;
+    const midpointX = (previous.x + point.x) / 2;
+    const midpointY = (previous.y + point.y) / 2;
+    return `${trace} Q ${previous.x.toFixed(2)} ${previous.y.toFixed(2)} ${midpointX.toFixed(2)} ${midpointY.toFixed(2)}`;
+  }, '');
+  const lastPoint = oscilloscopePoints.at(-1)!;
+  oscilloscopeTrace.setAttribute('d', `${path} T ${lastPoint.x.toFixed(2)} ${lastPoint.y.toFixed(2)}`);
   card.style.setProperty('--audio-opacity', String(0.1 + intensity * 0.38));
   card.style.setProperty('--spectrum-opacity', String(.48 + intensity * .5));
   const rippleOpacity = 0.08 + intensity * 0.58;
@@ -88,6 +119,7 @@ function flattenAudioLevels() {
   spectrumPeaks.fill(0);
   meterLevels.fill(0);
   meterPeaks.fill(0);
+  oscilloscopeLevels.fill(0);
   applyAudioLevels();
 }
 

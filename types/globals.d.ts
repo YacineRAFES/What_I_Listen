@@ -9,8 +9,8 @@ interface AudioOutputDevice {
   isDefault: boolean;
 }
 
-type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter';
-type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter';
+type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope';
+type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
 

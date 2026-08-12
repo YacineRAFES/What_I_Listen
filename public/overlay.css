@@ -267,6 +267,37 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
   transition: bottom .11s linear;
 }
 
+.visual-oscilloscope {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 16px, rgba(123, 255, 130, .1) 16px 17px),
+    repeating-linear-gradient(90deg, transparent 0 18px, rgba(123, 255, 130, .1) 18px 19px),
+    linear-gradient(135deg, rgba(7, 40, 15, .94), rgba(2, 13, 5, .97));
+  border: 1px solid rgba(126, 255, 129, .46);
+  box-shadow: inset 0 0 16px rgba(42, 255, 83, .12), 0 0 12px rgba(46, 255, 81, .13);
+  display: none;
+  height: 76px;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 13px;
+  top: 21px;
+  width: 144px;
+  z-index: 0;
+}
+
+#now-playing[data-visualizer="oscilloscope"] .visual-oscilloscope { display: block; }
+
+.visual-oscilloscope::before {
+  background: linear-gradient(90deg, transparent, rgba(205, 255, 190, .16) 49%, transparent 51%);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.visual-oscilloscope svg { display: block; height: 100%; position: relative; width: 100%; z-index: 1; }
+.visual-oscilloscope path { fill: none; filter: drop-shadow(0 0 3px #79ff79) drop-shadow(0 0 7px rgba(86, 255, 101, .8)); stroke: #c8ff9a; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.2; vector-effect: non-scaling-stroke; }
+
 .cover-wrap {
   background: radial-gradient(circle at 30% 25%, #9e4de7, #32125a 72%);
   border-radius: 12px;
@@ -331,6 +362,7 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing.paused .equalizer { opacity: .08; }
 #now-playing.paused .spectrum { opacity: .18; }
 #now-playing.paused .visual-meter { opacity: .2; }
+#now-playing.paused .visual-oscilloscope { opacity: .2; }
 
 /* Luna est une évocation de l'ère Windows XP, sans reprendre son interface à l'identique. */
 #now-playing[data-skin="luna"] {
@@ -975,3 +1007,27 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 #now-playing[data-skin="meter"] .status { color: #c5ff82; font-family: "Lucida Console", Consolas, monospace; font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px rgba(192, 255, 114, .42); }
 #now-playing[data-skin="meter"] .dot { height: 6px; width: 6px; }
 #now-playing[data-skin="meter"] .visual-meter { filter: drop-shadow(0 0 7px rgba(84, 255, 100, .16)); }
+
+/* Oscilloscope : écran cathodique et trace musicale construite à partir des 16 bandes. */
+#now-playing[data-skin="oscilloscope"] {
+  background:
+    radial-gradient(ellipse at 72% 50%, rgba(37, 126, 47, .15), transparent 43%),
+    linear-gradient(135deg, #0e2214, #040d07 58%, #102016);
+  border: 1px solid rgba(118, 195, 116, .72);
+  border-radius: 9px;
+  box-shadow: 0 10px 29px rgba(0, 0, 0, .6), inset 0 1px rgba(226, 255, 219, .1), inset 0 0 0 2px rgba(1, 8, 3, .42);
+  color: #eaffdf;
+  overflow: hidden;
+  padding: 0;
+}
+
+#now-playing[data-skin="oscilloscope"] .window-chrome { display: none; }
+#now-playing[data-skin="oscilloscope"] .overlay-content { background: linear-gradient(90deg, rgba(1, 11, 4, .22), transparent 74%); gap: 12px; padding: 12px; }
+#now-playing[data-skin="oscilloscope"] .cover-wrap { background: linear-gradient(135deg, #4dae59, #133f1e 61%, #99a637); border: 1px solid rgba(208, 255, 193, .58); border-radius: 7px; box-shadow: 0 3px 12px rgba(0, 0, 0, .58), 0 0 10px rgba(83, 255, 99, .16); flex-basis: 82px; height: 82px; }
+#now-playing[data-skin="oscilloscope"] .text { padding-right: 156px; }
+#now-playing[data-skin="oscilloscope"] .label { color: #aef99d; font-family: "Lucida Console", Consolas, monospace; font-size: 10px; letter-spacing: .13em; margin-bottom: 4px; text-shadow: 0 0 6px rgba(132, 255, 129, .48); }
+#now-playing[data-skin="oscilloscope"] #title { color: #f4ffe9; font-size: 19px; line-height: 1.14; text-shadow: 0 1px 4px rgba(0, 0, 0, .86); }
+#now-playing[data-skin="oscilloscope"] #artist { color: #d0e4c8; font-size: 14px; font-weight: 700; margin-top: 4px; }
+#now-playing[data-skin="oscilloscope"] #album { color: #94b78e; font-size: 10px; margin-top: 3px; }
+#now-playing[data-skin="oscilloscope"] .status { color: #c8ff8f; font-family: "Lucida Console", Consolas, monospace; font-size: 10px; margin-top: 7px; text-shadow: 0 0 6px rgba(192, 255, 114, .45); }
+#now-playing[data-skin="oscilloscope"] .dot { height: 6px; width: 6px; }

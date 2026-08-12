@@ -62,6 +62,11 @@
 .meter-preview i { background: linear-gradient(135deg, #56e669, #174021 62%, #b99624); border: 1px solid rgba(213, 255, 174, .65); border-radius: 5px; box-shadow: 0 2px 7px rgba(0, 0, 0, .5); height: 28px; left: 7px; top: 7px; width: 28px; }
 .meter-preview b { background: #efffe8; box-shadow: 0 0 6px rgba(156, 255, 148, .55); height: 5px; left: 43px; top: 11px; width: 39px; }
 .meter-preview em { background: repeating-linear-gradient(90deg, #48e365 0 3px, transparent 3px 5px), linear-gradient(to top, #45e363 0 57%, #ffdf5a 58% 78%, #ff554a 79%); bottom: 7px; box-shadow: 0 0 5px rgba(100, 255, 120, .38); height: 21px; left: 43px; width: 42px; }
+.oscilloscope-preview { background: repeating-linear-gradient(0deg, transparent 0 8px, rgba(135, 255, 132, .13) 8px 9px), repeating-linear-gradient(90deg, transparent 0 10px, rgba(135, 255, 132, .13) 10px 11px), linear-gradient(135deg, #16351b, #071208 62%); border: 1px solid #659d65; box-shadow: inset 0 0 12px rgba(76, 255, 92, .17); }
+.oscilloscope-preview::after { background: linear-gradient(145deg, transparent 0 34%, #c7ff9b 35% 39%, transparent 40% 52%, #c7ff9b 53% 57%, transparent 58%); box-shadow: 0 0 6px rgba(142, 255, 130, .8); content: ''; height: 32px; position: absolute; right: 2px; top: 5px; width: 54px; }
+.oscilloscope-preview i { background: linear-gradient(135deg, #75e26d, #1a4820 60%, #9cae37); border: 1px solid rgba(213, 255, 174, .65); border-radius: 5px; box-shadow: 0 2px 7px rgba(0, 0, 0, .5); height: 28px; left: 7px; top: 7px; width: 28px; }
+.oscilloscope-preview b { background: #efffe8; box-shadow: 0 0 6px rgba(156, 255, 148, .55); height: 5px; left: 43px; top: 11px; width: 29px; }
+.oscilloscope-preview em { background: #afdba8; height: 4px; left: 43px; top: 22px; width: 23px; }
 .winamp-preview { background: linear-gradient(145deg, #858b8e, #292e32 48%, #a8adb0); border: 2px solid #24282a; box-shadow: inset 0 0 0 1px #d8dcde; }
 .winamp-preview i { background: #102214; border: 2px inset #768679; height: 27px; left: 7px; top: 8px; width: 27px; }
 .winamp-preview b { background: #83e579; box-shadow: 0 0 5px #83e579; height: 5px; left: 42px; top: 12px; width: 39px; }
