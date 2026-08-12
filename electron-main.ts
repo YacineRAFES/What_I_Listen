@@ -9,7 +9,8 @@ const { autoUpdater } = electronUpdater;
 
 const projectDirectory = dirname(fileURLToPath(import.meta.url));
 const preloadPath = join(projectDirectory, 'preload.cjs');
-const appIconPath = join(projectDirectory, 'public', 'app-icon.svg');
+const appIconPath = join(projectDirectory, 'public', 'app-icon.ico');
+const appUserModelId = 'fr.whatilisten.deezer';
 
 let mainWindow: ElectronBrowserWindow | null = null;
 let previewWindow: ElectronBrowserWindow | null = null;
@@ -58,6 +59,8 @@ function nativeText(key: keyof typeof nativeTranslations.fr, language: OverlaySe
 }
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+// Windows uses the AppUserModelID to associate this process with its taskbar icon.
+app.setAppUserModelId(appUserModelId);
 
 function lockWindowToOverlay(window: ElectronBrowserWindow, serviceUrl: string): void {
   const allowedOrigin = new URL(serviceUrl).origin;
