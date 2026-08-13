@@ -24,6 +24,20 @@ interface AppUpdateInfo {
   updateAvailable: boolean;
 }
 
+type AutomaticUpdateStatus = 'available' | 'downloading' | 'downloaded' | 'error';
+
+interface AutomaticUpdateState {
+  status: AutomaticUpdateStatus;
+  currentVersion: string;
+  version: string;
+  language: 'fr' | 'en';
+  percent: number;
+  transferred: number;
+  total: number;
+  bytesPerSecond: number;
+  error?: string;
+}
+
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope';
 type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
@@ -77,6 +91,11 @@ interface Window {
     getUpdateInfo(forceRefresh?: boolean): Promise<AppUpdateInfo>;
     installRelease(version: string): Promise<void>;
     openChangelog(): Promise<void>;
+    getAutomaticUpdateState(): Promise<AutomaticUpdateState | null>;
+    downloadAutomaticUpdate(): Promise<void>;
+    restartAndInstallUpdate(): Promise<void>;
+    closeUpdateWindow(): Promise<void>;
+    onAutomaticUpdateState(listener: (state: AutomaticUpdateState) => void): () => void;
   };
 }
 

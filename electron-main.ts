@@ -18,12 +18,14 @@ const githubReleasesUrl = `https://api.github.com/repos/${githubRepository}/rele
 let mainWindow: ElectronBrowserWindow | null = null;
 let previewWindow: ElectronBrowserWindow | null = null;
 let changelogWindow: ElectronBrowserWindow | null = null;
+let updateWindow: ElectronBrowserWindow | null = null;
 let nativeAudioCapture: ChildProcess | null = null;
 let overlayService: OverlayService | null = null;
 let tray: ElectronTray | null = null;
 let isQuitting = false;
 let audioCaptureRestart: Promise<void> | null = null;
-let updatePromptOpen = false;
+let automaticUpdateState: AutomaticUpdateState | null = null;
+let updateDownloadPromise: Promise<void> | null = null;
 
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const RELEASE_CACHE_MS = 5 * 60 * 1000;
@@ -50,28 +52,34 @@ interface AudioOutputDevice {
   isDefault: boolean;
 }
 
+type AutomaticUpdateStatus = 'available' | 'downloading' | 'downloaded' | 'error';
+
+interface AutomaticUpdateState {
+  status: AutomaticUpdateStatus;
+  currentVersion: string;
+  version: string;
+  language: OverlaySettings['language'];
+  percent: number;
+  transferred: number;
+  total: number;
+  bytesPerSecond: number;
+  error?: string;
+}
+
 const nativeTranslations = {
   fr: {
     windowTitle: 'What I Listen — Deezer',
     show: 'Afficher What I Listen',
     preview: 'Ouvrir l’aperçu en direct',
     quit: 'Quitter',
-    updateReadyTitle: 'Mise à jour prête',
-    updateReadyMessage: 'Une nouvelle version de What I Listen a été téléchargée.',
-    updateReadyDetail: 'Redémarrez l’application pour terminer son installation, ou fermez-la plus tard pour l’installer automatiquement.',
-    restartAndInstall: 'Redémarrer et installer',
-    installLater: 'Plus tard',
+    updateWindowTitle: 'Mise à jour — What I Listen',
   },
   en: {
     windowTitle: 'What I Listen — Deezer',
     show: 'Show What I Listen',
     preview: 'Open live preview',
     quit: 'Quit',
-    updateReadyTitle: 'Update ready',
-    updateReadyMessage: 'A new version of What I Listen has been downloaded.',
-    updateReadyDetail: 'Restart the application to finish installing it, or close it later to install automatically.',
-    restartAndInstall: 'Restart and install',
-    installLater: 'Later',
+    updateWindowTitle: 'Update — What I Listen',
   },
 };
 
@@ -465,8 +473,94 @@ function createTray(language: OverlaySettings['language']): void {
   tray.on('click', () => { void showMainWindow(); });
 }
 
+function currentUpdateLanguage(fallback: OverlaySettings['language'] = 'fr'): OverlaySettings['language'] {
+  return overlayService?.settings().language ?? fallback;
+}
+
+function publishAutomaticUpdateState(state: AutomaticUpdateState): void {
+  automaticUpdateState = state;
+  if (!updateWindow || updateWindow.isDestroyed()) return;
+  updateWindow.setClosable(state.status !== 'downloading');
+  updateWindow.webContents.send('what-i-listen:automatic-update-state', state);
+}
+
+async function showUpdateWindow(): Promise<void> {
+  if (!automaticUpdateState) return;
+  if (updateWindow && !updateWindow.isDestroyed()) {
+    if (updateWindow.isMinimized()) updateWindow.restore();
+    updateWindow.show();
+    updateWindow.focus();
+    return;
+  }
+
+  const language = automaticUpdateState.language;
+  const window = new BrowserWindow({
+    width: 540,
+    height: 470,
+    useContentSize: true,
+    resizable: false,
+    maximizable: false,
+    minimizable: true,
+    closable: automaticUpdateState.status !== 'downloading',
+    show: false,
+    title: nativeText('updateWindowTitle', language),
+    icon: nativeImage.createFromPath(appIconPath),
+    backgroundColor: '#07111e',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: preloadPath,
+    },
+  });
+  updateWindow = window;
+  window.setMenuBarVisibility(false);
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', (event) => event.preventDefault());
+  window.once('ready-to-show', () => window.show());
+  window.on('closed', () => { updateWindow = null; });
+  await window.loadFile(join(projectDirectory, 'public', 'update.html'));
+}
+
+function closeUpdateWindow(): void {
+  if (automaticUpdateState?.status === 'downloading') return;
+  updateWindow?.close();
+}
+
+function startUpdateDownload(): Promise<void> {
+  if (automaticUpdateState?.status === 'downloaded') return Promise.resolve();
+  if (updateDownloadPromise) return updateDownloadPromise;
+  if (!automaticUpdateState || !['available', 'error'].includes(automaticUpdateState.status)) {
+    return Promise.reject(new Error('Aucune mise à jour n’est prête à être téléchargée.'));
+  }
+
+  publishAutomaticUpdateState({
+    ...automaticUpdateState,
+    status: 'downloading',
+    percent: 0,
+    transferred: 0,
+    total: 0,
+    bytesPerSecond: 0,
+    error: undefined,
+  });
+  updateDownloadPromise = autoUpdater.downloadUpdate()
+    .then(() => undefined)
+    .catch((error: unknown) => {
+      if (automaticUpdateState?.status === 'downloading') {
+        publishAutomaticUpdateState({
+          ...automaticUpdateState,
+          status: 'error',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      throw error;
+    })
+    .finally(() => { updateDownloadPromise = null; });
+  return updateDownloadPromise;
+}
+
 async function installDownloadedUpdate(): Promise<void> {
-  if (isQuitting) return;
+  if (isQuitting || automaticUpdateState?.status !== 'downloaded') return;
   isQuitting = true;
   stopNativeAudioCapture();
   try {
@@ -479,32 +573,61 @@ async function installDownloadedUpdate(): Promise<void> {
 function startAutomaticUpdates(language: OverlaySettings['language']): void {
   if (!app.isPackaged) return;
 
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
-  autoUpdater.on('update-downloaded', async () => {
-    if (updatePromptOpen || isQuitting) return;
-    updatePromptOpen = true;
-    try {
-      const currentLanguage = overlayService?.settings().language ?? language;
-      const result = await dialog.showMessageBox({
-        type: 'info',
-        title: nativeText('updateReadyTitle', currentLanguage),
-        message: nativeText('updateReadyMessage', currentLanguage),
-        detail: nativeText('updateReadyDetail', currentLanguage),
-        buttons: [nativeText('restartAndInstall', currentLanguage), nativeText('installLater', currentLanguage)],
-        defaultId: 0,
-        cancelId: 1,
-        noLink: true,
-      });
-      if (result.response === 0) await installDownloadedUpdate();
-    } finally {
-      updatePromptOpen = false;
-    }
+  autoUpdater.on('update-available', (info) => {
+    if (isQuitting) return;
+    publishAutomaticUpdateState({
+      status: 'available',
+      currentVersion: app.getVersion(),
+      version: info.version,
+      language: currentUpdateLanguage(language),
+      percent: 0,
+      transferred: 0,
+      total: 0,
+      bytesPerSecond: 0,
+    });
+    void showUpdateWindow().catch((error: unknown) => {
+      console.warn('La fenêtre de mise à jour n’a pas pu être ouverte :', error);
+    });
+  });
+  autoUpdater.on('download-progress', (progress) => {
+    if (!automaticUpdateState) return;
+    publishAutomaticUpdateState({
+      ...automaticUpdateState,
+      status: 'downloading',
+      percent: Math.max(0, Math.min(100, progress.percent)),
+      transferred: progress.transferred,
+      total: progress.total,
+      bytesPerSecond: progress.bytesPerSecond,
+      error: undefined,
+    });
+  });
+  autoUpdater.on('update-downloaded', (info) => {
+    if (!automaticUpdateState || isQuitting) return;
+    publishAutomaticUpdateState({
+      ...automaticUpdateState,
+      status: 'downloaded',
+      version: info.version,
+      percent: 100,
+      transferred: automaticUpdateState.total || automaticUpdateState.transferred,
+      error: undefined,
+    });
+    void showUpdateWindow().catch((error: unknown) => {
+      console.warn('La fenêtre de mise à jour n’a pas pu être rouverte :', error);
+    });
+  });
+  autoUpdater.on('error', (error) => {
+    if (!automaticUpdateState || automaticUpdateState.status === 'downloaded' || isQuitting) return;
+    publishAutomaticUpdateState({
+      ...automaticUpdateState,
+      status: 'error',
+      error: error.message,
+    });
   });
   const checkForUpdates = async () => {
     try {
-      const result = await autoUpdater.checkForUpdates();
-      await result?.downloadPromise;
+      await autoUpdater.checkForUpdates();
     } catch (error: unknown) {
       console.warn('La vérification des mises à jour a échoué :', error);
     }
@@ -523,6 +646,10 @@ app.whenReady().then(async () => {
   ipcMain.handle('what-i-listen:get-update-info', (_event, forceRefresh: unknown) => getUpdateInfo(forceRefresh === true));
   ipcMain.handle('what-i-listen:install-release', (_event, version: unknown) => installRelease(version));
   ipcMain.handle('what-i-listen:open-changelog', () => showChangelogWindow());
+  ipcMain.handle('what-i-listen:get-automatic-update-state', () => automaticUpdateState);
+  ipcMain.handle('what-i-listen:download-automatic-update', () => startUpdateDownload());
+  ipcMain.handle('what-i-listen:restart-and-install-update', () => installDownloadedUpdate());
+  ipcMain.handle('what-i-listen:close-update-window', () => closeUpdateWindow());
   const backendPath = app.isPackaged
     ? join(
         process.resourcesPath,

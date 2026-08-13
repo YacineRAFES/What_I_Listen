@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; style-src 'self'; script-src 'self'; connect-src 'none'">
+    <title>Mise à jour — What I Listen</title>
+    <link rel="icon" href="./app-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./update.css">
+  </head>
+  <body>
+    <main class="update-card" aria-labelledby="update-title">
+      <header class="brand">
+        <span class="brand-icon"><img src="./app-icon.svg" alt=""></span>
+        <span><strong>What I Listen</strong><small id="version-label">Mise à jour</small></span>
+        <span id="status-badge" class="status-badge">Nouvelle version</span>
+      </header>
+
+      <section class="update-content" aria-live="polite">
+        <div id="state-icon" class="state-icon" aria-hidden="true">↓</div>
+        <div>
+          <h1 id="update-title">Une mise à jour est disponible</h1>
+          <p id="update-message">Téléchargez-la maintenant tout en continuant à utiliser l’application.</p>
+        </div>
+      </section>
+
+      <section id="progress-section" class="progress-section">
+        <div class="progress-copy"><span id="progress-label">Prête à télécharger</span><strong id="progress-percent">0 %</strong></div>
+        <div id="progress-track" class="progress-track" role="progressbar" aria-label="Progression du téléchargement" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="progress-bar"></span>
+        </div>
+        <p id="progress-detail" class="progress-detail">L’application restera ouverte pendant le téléchargement.</p>
+      </section>
+
+      <p id="error-detail" class="error-detail" role="alert" hidden></p>
+
+      <footer class="actions">
+        <button id="later-button" class="secondary-button" type="button">Plus tard</button>
+        <button id="primary-button" class="primary-button" type="button">Télécharger la mise à jour</button>
+      </footer>
+    </main>
+    <script type="module" src="./update.js"></script>
+  </body>
+</html>

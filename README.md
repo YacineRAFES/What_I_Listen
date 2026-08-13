@@ -8,7 +8,7 @@ Distribué sous licence [MIT](LICENSE).
 
 Lance **What I Listen** : l’application démarre discrètement dans la zone de notification Windows, près de l’horloge. Elle continue de fonctionner même lorsque sa fenêtre est masquée. Clique sur son icône pour afficher l’application ; choisis **Quitter** dans ce menu uniquement si tu veux arrêter l’overlay.
 
-La version installée vérifie automatiquement les nouvelles versions publiées dans les GitHub Releases au démarrage, puis toutes les six heures. La mise à jour est téléchargée en arrière-plan et l’application propose de redémarrer lorsqu’elle est prête à être installée.
+La version installée vérifie automatiquement les nouvelles versions publiées dans les GitHub Releases au démarrage, puis toutes les six heures. Lorsqu’une mise à jour est disponible, une fenêtre dédiée permet de lancer le téléchargement, d’en suivre la progression sans fermer l’application, puis de confirmer le redémarrage une fois l’installation prête.
 
 Depuis l’**Accueil**, le bouton **Ouvrir l’aperçu en direct** affiche une petite fenêtre qui reproduit la source Navigateur OBS : inutile d’ouvrir OBS pour vérifier le rendu. Le spectrum y suit réellement la sortie audio sélectionnée ; il reste immobile lorsqu’aucun son ne sort de ce périphérique.
 

@@ -1,0 +1,151 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  color: #eaf2ff;
+  background: #07111e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 85% 5%, rgba(65, 132, 255, .19), transparent 38%),
+    radial-gradient(circle at 8% 95%, rgba(134, 74, 255, .14), transparent 42%),
+    #07111e;
+}
+
+button { font: inherit; }
+
+.update-card {
+  width: 100%;
+  min-height: 390px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(147, 180, 226, .16);
+  border-radius: 20px;
+  background: rgba(9, 24, 41, .92);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, .34), inset 0 1px rgba(255, 255, 255, .035);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 42px;
+  height: 42px;
+  padding: 7px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(127, 169, 255, .22);
+  border-radius: 12px;
+  background: rgba(64, 120, 225, .12);
+}
+
+.brand-icon img { width: 100%; height: 100%; }
+.brand strong, .brand small { display: block; }
+.brand strong { font-size: 14px; letter-spacing: .01em; }
+.brand small { margin-top: 2px; color: #8394aa; font-size: 12px; }
+
+.status-badge {
+  margin-left: auto;
+  padding: 6px 9px;
+  border: 1px solid rgba(89, 151, 255, .3);
+  border-radius: 999px;
+  color: #9ac0ff;
+  background: rgba(55, 112, 217, .12);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.update-content {
+  margin-top: 25px;
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 15px;
+  align-items: start;
+}
+
+.state-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: #b6d0ff;
+  background: linear-gradient(145deg, rgba(75, 135, 250, .25), rgba(104, 78, 230, .18));
+  font-size: 26px;
+  font-weight: 500;
+}
+
+h1 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -.025em; }
+.update-content p { margin: 7px 0 0; color: #9cabc0; font-size: 13px; line-height: 1.55; }
+
+.progress-section {
+  margin-top: 22px;
+  padding: 15px;
+  border: 1px solid rgba(137, 169, 214, .13);
+  border-radius: 14px;
+  background: rgba(2, 12, 24, .38);
+}
+
+.progress-copy { display: flex; justify-content: space-between; gap: 12px; color: #b9c6d8; font-size: 12px; }
+.progress-copy strong { color: #e6efff; }
+
+.progress-track {
+  height: 8px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #13263b;
+}
+
+.progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4f87ff, #8e6cff);
+  box-shadow: 0 0 16px rgba(92, 132, 255, .55);
+  transition: width .22s ease;
+}
+
+.progress-detail, .error-detail { margin: 10px 0 0; color: #74869d; font-size: 11px; line-height: 1.45; }
+.error-detail { color: #ff9eaa; }
+
+.actions { margin-top: auto; padding-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+
+.actions button {
+  min-height: 38px;
+  padding: 0 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.actions button:hover:not(:disabled) { transform: translateY(-1px); }
+.actions button:disabled { cursor: default; opacity: .62; }
+.secondary-button { border: 1px solid rgba(154, 180, 216, .2); color: #afbdd0; background: rgba(18, 37, 58, .68); }
+.primary-button { border: 1px solid rgba(127, 161, 255, .42); color: white; background: linear-gradient(135deg, #376fd4, #6854cf); box-shadow: 0 8px 22px rgba(46, 83, 188, .22); }
+
+body[data-status="downloading"] .state-icon { animation: download-pulse 1.6s ease-in-out infinite; }
+body[data-status="downloaded"] .state-icon { color: #a9f1d0; background: rgba(42, 171, 119, .16); }
+body[data-status="downloaded"] .status-badge { color: #8ee5bd; border-color: rgba(71, 205, 150, .28); background: rgba(39, 153, 106, .12); }
+body[data-status="error"] .state-icon { color: #ffadb7; background: rgba(213, 64, 87, .14); }
+
+@keyframes download-pulse {
+  50% { transform: translateY(2px); box-shadow: 0 0 22px rgba(77, 124, 241, .18); }
+}
