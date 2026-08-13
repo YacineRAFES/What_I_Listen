@@ -32,6 +32,10 @@ const translations = {
     downloadedMessage: 'Voulez-vous redémarrer l’application maintenant pour installer la nouvelle version ?',
     downloaded: 'Téléchargement terminé',
     restart: 'Redémarrer et installer',
+    installingBadge: 'Installation',
+    installingTitle: 'Fermeture de l’application…',
+    installingMessage: 'La mise à jour va être installée dans quelques instants.',
+    installing: 'Préparation de l’installation',
     errorBadge: 'Téléchargement interrompu',
     errorTitle: 'La mise à jour n’a pas pu être téléchargée',
     errorMessage: 'Vérifiez votre connexion, puis relancez le téléchargement.',
@@ -57,6 +61,10 @@ const translations = {
     downloadedMessage: 'Would you like to restart the application now to install the new version?',
     downloaded: 'Download complete',
     restart: 'Restart and install',
+    installingBadge: 'Installing',
+    installingTitle: 'Closing the application…',
+    installingMessage: 'The update will be installed in a few moments.',
+    installing: 'Preparing installation',
     errorBadge: 'Download interrupted',
     errorTitle: 'The update could not be downloaded',
     errorMessage: 'Check your connection, then start the download again.',
@@ -70,6 +78,21 @@ let latestState: AutomaticUpdateState | null = null;
 function formatBytes(value: number, language: AutomaticUpdateState['language']): string {
   if (!Number.isFinite(value) || value <= 0) return '0 MB';
   return new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(value / 1024 / 1024) + ' MB';
+}
+
+function renderInstalling(state: AutomaticUpdateState): void {
+  const copy = translations[state.language] ?? translations.fr;
+  document.body.dataset.status = 'installing';
+  statusBadge.textContent = copy.installingBadge;
+  stateIcon.textContent = '…';
+  title.textContent = copy.installingTitle;
+  message.textContent = copy.installingMessage;
+  progressLabel.textContent = copy.installing;
+  progressDetail.textContent = copy.installingMessage;
+  laterButton.hidden = false;
+  laterButton.disabled = true;
+  primaryButton.textContent = copy.installing;
+  primaryButton.disabled = true;
 }
 
 function render(state: AutomaticUpdateState): void {
@@ -142,8 +165,12 @@ primaryButton.addEventListener('click', async () => {
   if (!latestState || primaryButton.disabled) return;
   primaryButton.disabled = true;
   try {
-    if (latestState.status === 'downloaded') await window.whatIListen?.restartAndInstallUpdate();
-    else await window.whatIListen?.downloadAutomaticUpdate();
+    if (latestState.status === 'downloaded') {
+      renderInstalling(latestState);
+      await window.whatIListen?.restartAndInstallUpdate();
+    } else {
+      await window.whatIListen?.downloadAutomaticUpdate();
+    }
   } catch (error) {
     if (latestState.status !== 'error') {
       render({ ...latestState, status: 'error', error: error instanceof Error ? error.message : String(error) });

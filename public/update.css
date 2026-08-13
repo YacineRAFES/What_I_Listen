@@ -142,6 +142,7 @@ h1 { margin: 0; font-size: 22px; line-height: 1.2; letter-spacing: -.025em; }
 .primary-button { border: 1px solid rgba(127, 161, 255, .42); color: white; background: linear-gradient(135deg, #376fd4, #6854cf); box-shadow: 0 8px 22px rgba(46, 83, 188, .22); }
 
 body[data-status="downloading"] .state-icon { animation: download-pulse 1.6s ease-in-out infinite; }
+body[data-status="installing"] .state-icon { animation: download-pulse 1s ease-in-out infinite; }
 body[data-status="downloaded"] .state-icon { color: #a9f1d0; background: rgba(42, 171, 119, .16); }
 body[data-status="downloaded"] .status-badge { color: #8ee5bd; border-color: rgba(71, 205, 150, .28); background: rgba(39, 153, 106, .12); }
 body[data-status="error"] .state-icon { color: #ffadb7; background: rgba(213, 64, 87, .14); }

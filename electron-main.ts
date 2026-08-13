@@ -28,6 +28,8 @@ let automaticUpdateState: AutomaticUpdateState | null = null;
 let updateDownloadPromise: Promise<void> | null = null;
 
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const UPDATE_SHUTDOWN_TIMEOUT_MS = 4_000;
+const UPDATE_EXIT_FALLBACK_MS = 5_000;
 const RELEASE_CACHE_MS = 5 * 60 * 1000;
 const MAX_INSTALLER_BYTES = 512 * 1024 * 1024;
 
@@ -562,12 +564,35 @@ function startUpdateDownload(): Promise<void> {
 async function installDownloadedUpdate(): Promise<void> {
   if (isQuitting || automaticUpdateState?.status !== 'downloaded') return;
   isQuitting = true;
+  if (updateWindow && !updateWindow.isDestroyed()) updateWindow.setClosable(false);
   stopNativeAudioCapture();
-  try {
-    await overlayService?.close();
-  } finally {
-    autoUpdater.quitAndInstall(false, true);
+
+  const service = overlayService;
+  if (service) {
+    let shutdownTimer: NodeJS.Timeout | undefined;
+    const shutdownResult = await Promise.race([
+      service.close()
+        .then(() => 'closed' as const)
+        .catch((error: unknown) => {
+          console.warn('Le service local n’a pas pu être arrêté proprement avant la mise à jour :', error);
+          return 'failed' as const;
+        }),
+      new Promise<'timeout'>((resolve) => {
+        shutdownTimer = setTimeout(() => resolve('timeout'), UPDATE_SHUTDOWN_TIMEOUT_MS);
+      }),
+    ]);
+    if (shutdownTimer) clearTimeout(shutdownTimer);
+    if (shutdownResult === 'timeout') {
+      console.warn('Arrêt du service local trop long ; poursuite de l’installation.');
+    }
   }
+
+  // electron-updater doit quitter l'application après avoir lancé NSIS. Ce
+  // garde-fou évite qu'une erreur silencieuse de l'updater laisse la fenêtre
+  // ouverte indéfiniment avec le bouton désactivé.
+  const exitFallback = setTimeout(() => app.exit(0), UPDATE_EXIT_FALLBACK_MS);
+  exitFallback.unref();
+  autoUpdater.quitAndInstall(false, true);
 }
 
 function startAutomaticUpdates(language: OverlaySettings['language']): void {
