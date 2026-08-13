@@ -42,6 +42,9 @@
 .audio-source-select select { max-width: none; width: 100%; }
 .audio-source-control button { flex: 0 0 auto; margin: 0; min-height: 37px; white-space: nowrap; }
 .help-row { min-height: 82px; }
+.secondary-action { background: #102b3e; border: 1px solid rgba(57, 184, 232, .24); color: #77d9fb; flex: 0 0 auto; margin: 0; white-space: nowrap; }
+.secondary-action:hover { background: #153a52; }
+.secondary-action:disabled { cursor: wait; opacity: .55; }
 .save-status { color: #61dc7d; font-size: 10px; margin: 13px 2px 0; min-height: 15px; }
 .sr-only { clip: rect(0, 0, 0, 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
 
@@ -56,6 +59,8 @@ html[data-app-theme="light"] .slider::before { background: #758a9c; }
 html[data-app-theme="light"] .select-control select { background: #f7fafc; border-color: rgba(73, 112, 143, .25); color: #20384d; }
 html[data-app-theme="light"] .theme-options label { background: #f6f9fb; border-color: rgba(73, 112, 143, .22); color: #687d90; }
 html[data-app-theme="light"] .theme-options label:has(input:checked) { background: #eaf7fc; border-color: #1aa8df; color: #0b5776; }
+html[data-app-theme="light"] .secondary-action { background: #edf8fc; border-color: #c7e8f4; color: #087eac; }
+html[data-app-theme="light"] .secondary-action:hover { background: #dff3fa; }
 html[data-app-theme="light"] .save-status { color: #208748; }
 
 @media (max-width: 1050px) {

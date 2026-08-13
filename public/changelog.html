@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title data-i18n="changelog.windowTitle">Journal des modifications — What I Listen</title>
+    <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/changelog.css">
+  </head>
+  <body>
+    <main class="changelog-shell">
+      <header class="changelog-header">
+        <div class="brand">
+          <span class="brand-icon"><img src="/app-icon.svg" alt=""></span>
+          <div><span class="eyebrow" data-i18n="changelog.eyebrow">HISTORIQUE</span><h1 data-i18n="changelog.heading">Journal des modifications</h1></div>
+        </div>
+        <p data-i18n="changelog.intro">Découvre les nouveautés, améliorations et corrections de chaque version.</p>
+      </header>
+
+      <section class="version-toolbar" aria-labelledby="version-picker-label">
+        <div>
+          <label id="version-picker-label" for="version-picker" data-i18n="changelog.versionLabel">Version affichée</label>
+          <div class="version-controls">
+            <span class="select-control"><select id="version-picker" disabled><option data-i18n="changelog.loading">Chargement des versions…</option></select></span>
+            <button id="refresh-releases" class="icon-button" type="button" data-i18n-title="changelog.refresh" title="Actualiser" aria-label="Actualiser">↻</button>
+          </div>
+        </div>
+        <div class="current-version"><span data-i18n="changelog.installed">Version installée</span><strong id="current-version">—</strong></div>
+      </section>
+
+      <p id="status" class="status" role="status" data-i18n="changelog.loading">Chargement des versions…</p>
+
+      <article id="release-card" class="release-card" hidden>
+        <header class="release-heading">
+          <div><span id="release-version" class="release-version">—</span><h2 id="release-title">—</h2></div>
+          <div class="release-meta"><span id="current-badge" class="current-badge" data-i18n="changelog.current" hidden>Installée</span><time id="release-date"></time></div>
+        </header>
+        <div id="release-notes" class="release-notes"></div>
+        <footer class="release-actions">
+          <p id="install-hint"></p>
+          <button id="install-release" type="button" hidden data-i18n="changelog.install">Installer cette version</button>
+        </footer>
+      </article>
+
+      <section id="empty-state" class="empty-state" hidden>
+        <span aria-hidden="true">⌁</span>
+        <h2 data-i18n="changelog.emptyTitle">Aucune version disponible</h2>
+        <p data-i18n="changelog.emptyMessage">Réessaie après avoir vérifié ta connexion Internet.</p>
+      </section>
+    </main>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/changelog.js"></script>
+  </body>
+</html>
