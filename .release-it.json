@@ -11,10 +11,29 @@
   },
   "plugins": {
     "@release-it/conventional-changelog": {
+      "infile": "CHANGELOG.md",
       "preset": {
-        "name": "angular"
-      },
-      "infile": "CHANGELOG.md"
+        "name": "conventionalcommits",
+        "types": [
+          {
+            "type": "feat",
+            "section": "Features"
+          },
+          {
+            "type": "fix",
+            "section": "Bug Fixes"
+          },
+          {
+            "type": "docs",
+            "section": "Documentation",
+            "effect": "changelog"
+          },
+          {
+            "type": "chore",
+            "effect": "hidden"
+          }
+        ]
+      }
     }
   },
   "github": {

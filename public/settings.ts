@@ -3,6 +3,7 @@ const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!
 const language = document.querySelector<HTMLSelectElement>('#language')!;
 const audioOutputDevice = document.querySelector<HTMLSelectElement>('#audio-output-device')!;
 const refreshAudioOutputsButton = document.querySelector<HTMLButtonElement>('#refresh-audio-outputs')!;
+const openChangelogButton = document.querySelector<HTMLButtonElement>('#open-changelog')!;
 const appThemeOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="app-theme"]')];
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const { t } = window.i18n;
@@ -178,6 +179,19 @@ language.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     language.disabled = false;
+  }
+});
+
+openChangelogButton.addEventListener('click', async () => {
+  openChangelogButton.disabled = true;
+  try {
+    if (!window.whatIListen?.openChangelog) throw new Error('Changelog unavailable');
+    await window.whatIListen.openChangelog();
+    setStatus('settings.changelog.opened');
+  } catch {
+    setStatus('settings.changelog.error');
+  } finally {
+    openChangelogButton.disabled = false;
   }
 });
 

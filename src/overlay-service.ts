@@ -691,6 +691,16 @@ export async function startOverlayService({
       case '/settings.js':
         await sendStatic(response, 'settings.js', 'text/javascript; charset=utf-8');
         break;
+      case '/changelog':
+      case '/changelog.html':
+        await sendStatic(response, 'changelog.html', 'text/html; charset=utf-8');
+        break;
+      case '/changelog.css':
+        await sendStatic(response, 'changelog.css', 'text/css; charset=utf-8');
+        break;
+      case '/changelog.js':
+        await sendStatic(response, 'changelog.js', 'text/javascript; charset=utf-8');
+        break;
       case '/styles':
       case '/styles.html':
         await sendStatic(response, 'styles.html', 'text/html; charset=utf-8');
