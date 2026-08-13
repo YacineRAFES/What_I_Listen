@@ -16,6 +16,10 @@
         "name": "conventionalcommits",
         "types": [
           {
+            "type": "feature",
+            "section": "Features"
+          },
+          {
             "type": "feat",
             "section": "Features"
           },
@@ -32,6 +36,14 @@
             "type": "chore",
             "effect": "hidden"
           }
+        ]
+      },
+      "parserOpts": {
+        "headerPattern": "^\\(?([A-Za-z]+)(?:\\((.*)\\))?\\)?!?(?::\\s+|\\s+)(.*)$",
+        "headerCorrespondence": [
+          "type",
+          "scope",
+          "subject"
         ]
       }
     }
