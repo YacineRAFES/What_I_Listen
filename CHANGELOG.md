@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.1](https://github.com/YacineRAFES/What_I_Listen/compare/v0.6.0...v0.6.1) (2026-08-13)
+
+### Bug Fixes
+
+* Ensure update installation exits cleanly ([44a514c](https://github.com/YacineRAFES/What_I_Listen/commit/44a514cd8973b4a041832f69b75fe77335c9cf1b))
+
 ## [0.6.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.5.4...v0.6.0) (2026-08-13)
 
 ### Features
