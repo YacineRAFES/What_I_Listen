@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.5.4...v0.6.0) (2026-08-13)
+
+### Features
+
+* Add localized changelog access and release installer flow ([5543647](https://github.com/YacineRAFES/What_I_Listen/commit/554364727907d188c5f96eb068d611179ff2801a))
+* ajouter les visualisations audio WebGL ([651ca45](https://github.com/YacineRAFES/What_I_Listen/commit/651ca45448a79ede10a38073b9075047854ef831))
+
+### Bug Fixes
+
+* reconnaître les préfixes de commit pour les releases ([e8a3167](https://github.com/YacineRAFES/What_I_Listen/commit/e8a3167a79105ceb24d151fff9bdbb09c1c10041))
+
 ## [0.5.4](https://github.com/YacineRAFES/What_I_Listen/compare/v0.5.3...v0.5.4) (2026-08-13)
 
 ## [0.5.3](https://github.com/YacineRAFES/What_I_Listen/compare/v0.5.2...v0.5.3) (2026-08-13)
