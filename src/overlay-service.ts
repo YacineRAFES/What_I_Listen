@@ -6,7 +6,7 @@ import { createSessionManager } from 'windows-media-sessions';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
-const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope']);
+const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'kaleidoscope']);
 const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const spectrumPalettes = new Set(['modern', 'ocean-mist', 'fire-storm', 'scope']);
 const supportedLanguages = new Set(['fr', 'en']);
@@ -31,6 +31,9 @@ const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.
   battery: 'battery',
   meter: 'meter',
   oscilloscope: 'oscilloscope',
+  tunnel: 'tunnel',
+  particles: 'particles',
+  kaleidoscope: 'kaleidoscope',
 });
 const audioBandCount = 16;
 const coverRefreshDelayMs = 5000;

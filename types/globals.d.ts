@@ -38,8 +38,8 @@ interface AutomaticUpdateState {
   error?: string;
 }
 
-type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope';
-type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope';
+type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'kaleidoscope';
+type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'kaleidoscope';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
 type AppTheme = 'dark' | 'light';

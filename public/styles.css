@@ -70,6 +70,16 @@
 .spectrum-preview::before { background: linear-gradient(90deg, #ff9d00, #ff315f 32%, #9c38ed 61%, #16dfff); bottom: 46%; clip-path: polygon(0 88%, 4% 51%, 8% 70%, 12% 24%, 16% 62%, 20% 33%, 24% 75%, 28% 16%, 32% 58%, 36% 31%, 40% 79%, 44% 8%, 48% 49%, 52% 18%, 56% 66%, 60% 29%, 64% 73%, 68% 13%, 72% 58%, 76% 34%, 80% 81%, 84% 22%, 88% 61%, 92% 37%, 96% 69%, 100% 43%, 100% 100%, 0 100%); content: ''; height: 44%; left: 0; opacity: .9; position: absolute; right: 0; }
 .spectrum-preview i { background: linear-gradient(145deg, #43e4ff, #6547ce 56%, #d050ed); }
 .spectrum-preview em { background: linear-gradient(90deg, #23ddfb, #754cf2, #ed43bd); height: 4px; }
+.tunnel-preview { background: repeating-radial-gradient(ellipse at 72% 50%, transparent 0 9px, rgba(58, 224, 255, .68) 10px 11px, transparent 12px 19px), conic-gradient(from 25deg at 72% 50%, #08031c, #4221a3, #07bad1, #16042f, #f82aaa, #08031c); }
+.tunnel-preview i { background: linear-gradient(145deg, #38dbff, #5636d9 58%, #ff3db5); }
+.tunnel-preview em { background: linear-gradient(90deg, #2ee7ff, #9c42ff, #ff42a8); box-shadow: 0 0 8px #6d42ff; height: 3px; }
+.particles-preview { background: radial-gradient(circle at 72% 31%, #fff 0 1px, #48dfff 2px, transparent 5px), radial-gradient(circle at 82% 68%, #fff 0 1px, #ff4fbd 2px, transparent 6px), radial-gradient(circle at 58% 56%, #fff 0 1px, #8f63ff 2px, transparent 5px), radial-gradient(circle at 38% 19%, #2fc9ff 0 1px, transparent 4px), radial-gradient(circle at 50% 77%, #ff53d2 0 1px, transparent 5px), #05091a; }
+.particles-preview i { background: linear-gradient(145deg, #53e6ff, #603bc7 52%, #f04abd); }
+.particles-preview em { background: repeating-radial-gradient(circle at 70% 50%, #a9f6ff 0 1px, transparent 2px 6px); height: 25px; }
+.kaleidoscope-preview { background: conic-gradient(from 12deg at 72% 48%, #12052c, #ee2e9d, #4e3cff, #19e6ff, #702dd7, #ff3f8c, #12052c); }
+.kaleidoscope-preview::before { background: repeating-conic-gradient(from 0deg at 72% 48%, rgba(255,255,255,.5) 0 2deg, transparent 3deg 24deg); content: ''; inset: 0; mix-blend-mode: screen; position: absolute; }
+.kaleidoscope-preview i { background: linear-gradient(145deg, #ff52ae, #6546e8 54%, #36eaff); }
+.kaleidoscope-preview em { background: linear-gradient(90deg, #ff3fad, #7d48ff, #2ce9ff); box-shadow: 0 0 8px #d644ff; height: 4px; }
 .battery-preview { background: radial-gradient(circle at 72% 43%, rgba(254, 73, 207, .74), transparent 17%), radial-gradient(circle at 68% 52%, rgba(41, 213, 255, .62), transparent 34%), #071426; }
 .battery-preview i { background: linear-gradient(145deg, #4ce7ff, #7053d5 55%, #f350c7); }
 .battery-preview em { background: linear-gradient(90deg, transparent, #4fe6ff 25%, #a66cff 53%, #fc66cf 78%, transparent); border-radius: 50%; height: 22px; }
