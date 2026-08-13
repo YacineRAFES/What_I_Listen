@@ -19,8 +19,14 @@
   },
   "github": {
     "release": true,
-    "releaseName": "What I Listen",
-    "autoGenerate": true,
+    "releaseName": "What I Listen v${version}",
+    "autoGenerate": false,
+    "releaseNotes": {
+      "commit": "{- ${commit.subject}}",
+      "excludeMatches": [
+        "chore(release):"
+      ]
+    },
     "assets": [
       "dist/*.exe",
       "dist/*.blockmap",
