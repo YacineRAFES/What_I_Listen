@@ -1,6 +1,7 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray, type BrowserWindow as ElectronBrowserWindow, type Tray as ElectronTray } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, Tray, type BrowserWindow as ElectronBrowserWindow, type Tray as ElectronTray } from 'electron';
 import electronUpdater from 'electron-updater';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startOverlayService, type OverlayService } from './src/overlay-service.js';
@@ -11,9 +12,12 @@ const projectDirectory = dirname(fileURLToPath(import.meta.url));
 const preloadPath = join(projectDirectory, 'preload.cjs');
 const appIconPath = join(projectDirectory, 'public', 'app-icon.ico');
 const appUserModelId = 'fr.whatilisten.deezer';
+const githubRepository = 'YacineRAFES/What_I_Listen';
+const githubReleasesUrl = `https://api.github.com/repos/${githubRepository}/releases`;
 
 let mainWindow: ElectronBrowserWindow | null = null;
 let previewWindow: ElectronBrowserWindow | null = null;
+let changelogWindow: ElectronBrowserWindow | null = null;
 let nativeAudioCapture: ChildProcess | null = null;
 let overlayService: OverlayService | null = null;
 let tray: ElectronTray | null = null;
@@ -22,6 +26,23 @@ let audioCaptureRestart: Promise<void> | null = null;
 let updatePromptOpen = false;
 
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const RELEASE_CACHE_MS = 5 * 60 * 1000;
+const MAX_INSTALLER_BYTES = 512 * 1024 * 1024;
+
+interface ReleaseAsset {
+  name: string;
+  downloadUrl: string;
+}
+
+interface CachedRelease {
+  version: string;
+  title: string;
+  publishedAt: string;
+  notes: string;
+  assets: ReleaseAsset[];
+}
+
+let releasesCache: { releases: CachedRelease[]; updatedAt: number } | null = null;
 
 interface AudioOutputDevice {
   id: string;
@@ -87,14 +108,24 @@ function showMainWindow() {
 
 function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
   const window = new BrowserWindow({
-    width: 920,
-    height: 720,
-    minWidth: 720,
-    minHeight: 590,
+    width: 1360,
+    height: 840,
+    minWidth: 960,
+    minHeight: 680,
     show: false,
+    movable: true,
+    resizable: true,
+    thickFrame: true,
     title: 'What I Listen — Deezer',
     icon: nativeImage.createFromPath(appIconPath),
-    backgroundColor: '#100b18',
+    backgroundColor: '#07111e',
+    autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#07111e',
+      symbolColor: '#dbeafe',
+      height: 54,
+    },
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -102,6 +133,7 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
       preload: preloadPath,
     },
   });
+  window.setMenuBarVisibility(false);
   mainWindow = window;
 
   window.once('ready-to-show', () => {
@@ -112,6 +144,171 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
   if (!service) throw new Error('Le service local n’est pas encore prêt.');
   lockWindowToOverlay(window, service.url);
   return window.loadURL(`${service.url}app`);
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function releaseVersion(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const version = value.trim().replace(/^v/i, '');
+  return /^\d+(?:\.\d+){1,3}(?:-[0-9A-Za-z.-]+)?$/.test(version) ? version : null;
+}
+
+function installerName(version: string): string {
+  return `What-I-Listen-Setup-${version}.exe`;
+}
+
+function isTrustedReleaseAssetUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:'
+      && url.hostname === 'github.com'
+      && url.pathname.startsWith(`/${githubRepository}/releases/download/`);
+  } catch {
+    return false;
+  }
+}
+
+function parseRelease(value: unknown): CachedRelease | null {
+  const release = asRecord(value);
+  if (!release || release.draft === true || release.prerelease === true) return null;
+  const version = releaseVersion(release.tag_name);
+  if (!version) return null;
+
+  const assets = Array.isArray(release.assets) ? release.assets.flatMap((value) => {
+    const asset = asRecord(value);
+    const name = typeof asset?.name === 'string' ? asset.name : '';
+    const downloadUrl = typeof asset?.browser_download_url === 'string' ? asset.browser_download_url : '';
+    return name && isTrustedReleaseAssetUrl(downloadUrl) ? [{ name, downloadUrl }] : [];
+  }) : [];
+
+  return {
+    version,
+    title: typeof release.name === 'string' && release.name.trim() ? release.name.trim() : `v${version}`,
+    publishedAt: typeof release.published_at === 'string' ? release.published_at : '',
+    notes: typeof release.body === 'string' ? release.body : '',
+    assets,
+  };
+}
+
+async function availableReleases(forceRefresh = false): Promise<CachedRelease[]> {
+  if (!forceRefresh && releasesCache && Date.now() - releasesCache.updatedAt < RELEASE_CACHE_MS) return releasesCache.releases;
+
+  const response = await net.fetch(githubReleasesUrl, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': 'What-I-Listen',
+    },
+  });
+  if (!response.ok) throw new Error(`GitHub Releases indisponible (HTTP ${response.status}).`);
+  const payload: unknown = await response.json();
+  if (!Array.isArray(payload)) throw new Error('Réponse GitHub Releases invalide.');
+
+  const releases = payload.map(parseRelease).filter((release): release is CachedRelease => release !== null);
+  releasesCache = { releases, updatedAt: Date.now() };
+  return releases;
+}
+
+function compareVersions(left: string, right: string): number {
+  const leftParts = left.split(/[.-]/).map((part) => Number.parseInt(part, 10));
+  const rightParts = right.split(/[.-]/).map((part) => Number.parseInt(part, 10));
+  for (let index = 0; index < Math.max(leftParts.length, rightParts.length); index += 1) {
+    const difference = (leftParts[index] || 0) - (rightParts[index] || 0);
+    if (difference) return difference;
+  }
+  return 0;
+}
+
+function releaseForClient(release: CachedRelease): AppRelease {
+  const currentVersion = app.getVersion();
+  return {
+    version: release.version,
+    title: release.title,
+    publishedAt: release.publishedAt,
+    notes: release.notes,
+    isCurrent: release.version === currentVersion,
+    canInstall: release.assets.some((asset) => asset.name === installerName(release.version)),
+  };
+}
+
+async function getUpdateInfo(forceRefresh = false): Promise<AppUpdateInfo> {
+  const releases = await availableReleases(forceRefresh);
+  const currentVersion = app.getVersion();
+  const clientReleases = releases.map(releaseForClient);
+  return {
+    currentVersion,
+    releases: clientReleases,
+    updateAvailable: clientReleases.some((release) => compareVersions(release.version, currentVersion) > 0),
+  };
+}
+
+async function installRelease(versionValue: unknown): Promise<void> {
+  const version = releaseVersion(versionValue);
+  if (!version) throw new Error('Version de mise à jour invalide.');
+  const releases = await availableReleases();
+  const release = releases.find((candidate) => candidate.version === version);
+  const asset = release?.assets.find((candidate) => candidate.name === installerName(version));
+  if (!asset) throw new Error(`L’installeur de la version ${version} est introuvable.`);
+
+  const response = await net.fetch(asset.downloadUrl);
+  if (!response.ok) throw new Error(`Téléchargement impossible (HTTP ${response.status}).`);
+  const contentLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_INSTALLER_BYTES) throw new Error('L’installeur est trop volumineux.');
+  const installer = Buffer.from(await response.arrayBuffer());
+  if (!installer.length || installer.length > MAX_INSTALLER_BYTES) throw new Error('L’installeur téléchargé est invalide.');
+
+  const installerPath = join(app.getPath('temp'), installerName(version));
+  await writeFile(installerPath, installer);
+  await new Promise<void>((resolve, reject) => {
+    const process = spawn(installerPath, [], { detached: true, stdio: 'ignore', windowsHide: true });
+    process.once('error', reject);
+    process.once('spawn', () => {
+      process.unref();
+      resolve();
+    });
+  });
+
+  isQuitting = true;
+  stopNativeAudioCapture();
+  try {
+    await overlayService?.close();
+  } finally {
+    app.exit(0);
+  }
+}
+
+async function showChangelogWindow(): Promise<void> {
+  if (!overlayService) throw new Error('Le service local n’est pas encore prêt.');
+  if (changelogWindow) {
+    if (changelogWindow.isMinimized()) changelogWindow.restore();
+    changelogWindow.show();
+    changelogWindow.focus();
+    return;
+  }
+
+  const window = new BrowserWindow({
+    width: 780,
+    height: 680,
+    minWidth: 620,
+    minHeight: 480,
+    show: false,
+    title: 'Changelog — What I Listen',
+    icon: nativeImage.createFromPath(appIconPath),
+    backgroundColor: '#100b18',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: preloadPath,
+    },
+  });
+  changelogWindow = window;
+  window.once('ready-to-show', () => window.show());
+  window.on('closed', () => { changelogWindow = null; });
+  lockWindowToOverlay(window, overlayService.url);
+  await window.loadURL(`${overlayService.url}changelog`);
 }
 
 function nativeCapturePath(): string {
@@ -319,8 +516,13 @@ function startAutomaticUpdates(language: OverlaySettings['language']): void {
 
 app.whenReady().then(async () => {
   app.setName('What I Listen');
+  Menu.setApplicationMenu(null);
   ipcMain.handle('what-i-listen:open-preview', () => showPreviewWindow());
   ipcMain.handle('what-i-listen:list-audio-outputs', () => listAudioOutputDevices());
+  ipcMain.handle('what-i-listen:get-app-version', () => app.getVersion());
+  ipcMain.handle('what-i-listen:get-update-info', (_event, forceRefresh: unknown) => getUpdateInfo(forceRefresh === true));
+  ipcMain.handle('what-i-listen:install-release', (_event, version: unknown) => installRelease(version));
+  ipcMain.handle('what-i-listen:open-changelog', () => showChangelogWindow());
   const backendPath = app.isPackaged
     ? join(
         process.resourcesPath,

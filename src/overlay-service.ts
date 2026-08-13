@@ -10,6 +10,7 @@ const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon', 'spectr
 const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const spectrumPalettes = new Set(['modern', 'ocean-mist', 'fire-storm', 'scope']);
 const supportedLanguages = new Set(['fr', 'en']);
+const appThemes = new Set(['dark', 'light']);
 const defaultSettings = Object.freeze({
   skin: 'luna',
   neonPalette: 'violet-cyan',
@@ -18,6 +19,7 @@ const defaultSettings = Object.freeze({
   startHidden: true,
   titleMarquee: true,
   language: 'fr',
+  appTheme: 'dark',
 } satisfies OverlaySettings);
 const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.freeze({
   luna: 'bars',
@@ -38,13 +40,13 @@ const maxCoverBytes = 5 * 1024 * 1024;
 const maxCoverBase64Length = Math.ceil(maxCoverBytes * 4 / 3);
 const maxAudioSubscribers = 8;
 const securityHeaders = Object.freeze({
-  'Content-Security-Policy': "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'",
+  'Content-Security-Policy': "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'",
   'Cross-Origin-Opener-Policy': 'same-origin',
   'Cross-Origin-Resource-Policy': 'same-origin',
   'Permissions-Policy': 'camera=(), geolocation=(), microphone=(), payment=(), usb=()',
   'Referrer-Policy': 'no-referrer',
   'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
+  'X-Frame-Options': 'SAMEORIGIN',
   'X-DNS-Prefetch-Control': 'off',
 });
 
@@ -201,6 +203,10 @@ function normalizeAudioOutputDeviceId(value: unknown): string {
   return typeof value === 'string' ? value.trim().slice(0, 512) : defaultSettings.audioOutputDeviceId;
 }
 
+function normalizeAppTheme(value: unknown): AppTheme {
+  return typeof value === 'string' && appThemes.has(value) ? value as AppTheme : defaultSettings.appTheme;
+}
+
 function normalizeAudioLevels(value: unknown): AudioLevels | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<AudioLevels>;
@@ -230,6 +236,7 @@ async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
       startHidden: typeof settings.startHidden === 'boolean' ? settings.startHidden : defaultSettings.startHidden,
       titleMarquee: typeof settings.titleMarquee === 'boolean' ? settings.titleMarquee : defaultSettings.titleMarquee,
       language: normalizeLanguage(settings.language),
+      appTheme: normalizeAppTheme(settings.appTheme),
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn(`Paramètres du visualiseur ignorés : ${errorMessage(error)}`);
@@ -285,6 +292,7 @@ export async function startOverlayService({
     startHidden: savedSettings.startHidden,
     titleMarquee: savedSettings.titleMarquee,
     language: savedSettings.language,
+    appTheme: savedSettings.appTheme,
     audio: {
       active: false,
       bands: Array(audioBandCount).fill(0),
@@ -463,6 +471,7 @@ export async function startOverlayService({
       startHidden: state.startHidden,
       titleMarquee: state.titleMarquee,
       language: state.language,
+      appTheme: state.appTheme,
     };
   }
 
@@ -580,14 +589,16 @@ export async function startOverlayService({
         const updatesStartHidden = Object.hasOwn(payload, 'startHidden');
         const updatesTitleMarquee = Object.hasOwn(payload, 'titleMarquee');
         const updatesLanguage = Object.hasOwn(payload, 'language');
+        const updatesAppTheme = Object.hasOwn(payload, 'appTheme');
         const updatesSkin = Object.hasOwn(payload, 'skin');
         const updatesNeonPalette = Object.hasOwn(payload, 'neonPalette');
         const updatesSpectrumPalette = Object.hasOwn(payload, 'spectrumPalette');
         const updatesAudioOutputDeviceId = Object.hasOwn(payload, 'audioOutputDeviceId');
-        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId) throw new Error('Aucun paramètre à enregistrer.');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
         if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
+        if (updatesAppTheme && (typeof payload.appTheme !== 'string' || !appThemes.has(payload.appTheme))) throw new Error('Thème d’application inconnu.');
         if (updatesSkin && (typeof payload.skin !== 'string' || !overlaySkins.has(payload.skin))) throw new Error('Style d’overlay inconnu.');
         if (updatesNeonPalette && (typeof payload.neonPalette !== 'string' || !neonPalettes.has(payload.neonPalette))) throw new Error('Palette néon inconnue.');
         if (updatesSpectrumPalette && (typeof payload.spectrumPalette !== 'string' || !spectrumPalettes.has(payload.spectrumPalette))) throw new Error('Palette Spectrum inconnue.');
@@ -595,6 +606,7 @@ export async function startOverlayService({
         if (typeof payload.startHidden === 'boolean') state.startHidden = payload.startHidden;
         if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
         if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
+        if (typeof payload.appTheme === 'string') state.appTheme = payload.appTheme as AppTheme;
         if (typeof payload.neonPalette === 'string') state.neonPalette = payload.neonPalette as NeonPalette;
         if (typeof payload.spectrumPalette === 'string') state.spectrumPalette = payload.spectrumPalette as SpectrumPalette;
         if (typeof payload.audioOutputDeviceId === 'string') state.audioOutputDeviceId = normalizeAudioOutputDeviceId(payload.audioOutputDeviceId);
@@ -666,6 +678,9 @@ export async function startOverlayService({
       case '/i18n.js':
         await sendStatic(response, 'i18n.js', 'text/javascript; charset=utf-8');
         break;
+      case '/shell.js':
+        await sendStatic(response, 'shell.js', 'text/javascript; charset=utf-8');
+        break;
       case '/settings':
       case '/settings.html':
         await sendStatic(response, 'settings.html', 'text/html; charset=utf-8');
@@ -679,6 +694,9 @@ export async function startOverlayService({
       case '/styles':
       case '/styles.html':
         await sendStatic(response, 'styles.html', 'text/html; charset=utf-8');
+        break;
+      case '/styles.css':
+        await sendStatic(response, 'styles.css', 'text/css; charset=utf-8');
         break;
       case '/styles.js':
         await sendStatic(response, 'styles.js', 'text/javascript; charset=utf-8');

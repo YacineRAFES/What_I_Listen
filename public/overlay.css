@@ -27,6 +27,7 @@ html, body { margin: 0; background: transparent; overflow: hidden; }
 
 #now-playing.visible { transform: translateX(0); }
 #now-playing.paused { opacity: .62; }
+.embedded-preview #now-playing { transform: translateX(0) !important; transition: none; }
 .window-chrome { display: none; }
 
 .overlay-content {

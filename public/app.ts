@@ -1,12 +1,14 @@
 const connection = document.querySelector<HTMLDivElement>('#connection')!;
 const cover = document.querySelector<HTMLImageElement>('#cover')!;
-const playback = document.querySelector<HTMLParagraphElement>('#playback')!;
+const playback = document.querySelector<HTMLElement>('#playback')!;
 const title = document.querySelector<HTMLHeadingElement>('#title')!;
 const artist = document.querySelector<HTMLParagraphElement>('#artist')!;
 const album = document.querySelector<HTMLParagraphElement>('#album')!;
 const errorText = document.querySelector<HTMLParagraphElement>('#error')!;
 const obsUrl = document.querySelector<HTMLElement>('#obs-url')!;
 const copyButton = document.querySelector<HTMLButtonElement>('#copy-url')!;
+const homePreviewFrame = document.querySelector<HTMLIFrameElement>('#home-preview-frame')!;
+const homePreviewViewport = document.querySelector<HTMLElement>('#home-preview-viewport')!;
 const { t } = window.i18n;
 
 let previousCoverUrl = '';
@@ -53,6 +55,12 @@ function refreshCover(data: NowPlayingData) {
   });
 }
 
+function resizeHomePreview() {
+  const scale = Math.min(1, homePreviewViewport.clientWidth / 520);
+  homePreviewFrame.style.transform = `scale(${scale})`;
+  homePreviewViewport.style.height = `${Math.ceil(130 * scale)}px`;
+}
+
 async function refresh() {
   try {
     const response = await fetch('/api/now-playing', { cache: 'no-store' });
@@ -78,5 +86,7 @@ document.addEventListener('app-language-change', () => {
   else if (latestError) renderServiceError(latestError);
 });
 
+new ResizeObserver(resizeHomePreview).observe(homePreviewViewport);
+resizeHomePreview();
 refresh();
 window.setInterval(refresh, 750);

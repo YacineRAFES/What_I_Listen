@@ -6,125 +6,160 @@
     <title data-i18n="styles.title">Styles de l’overlay — What I Listen</title>
     <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/app.css">
-    <link rel="stylesheet" href="/settings.css">
+    <link rel="stylesheet" href="/styles.css">
   </head>
-  <body>
-    <main class="app-shell">
-      <header class="app-header">
-        <div class="app-brand">
-          <img class="app-logo" src="/app-icon.svg" alt="" aria-hidden="true">
-          <div>
-            <p class="eyebrow">WHAT I LISTEN</p>
-            <h1>What I Listen <span>— Deezer</span></h1>
-          </div>
-        </div>
-      </header>
-
-      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
-        <a href="/app" data-i18n="nav.home">Accueil</a>
-        <a class="active" href="/styles" data-i18n="nav.styles">Styles</a>
-        <a href="/settings" data-i18n="nav.settings">Paramètres</a>
+  <body class="styles-page app-layout">
+    <header class="window-titlebar">
+      <div class="window-brand" aria-label="What I Listen">
+        <img src="/app-icon.svg" alt="" aria-hidden="true">
+        <span>What I Listen</span>
+      </div>
+    </header>
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app"><span class="sidebar-icon" aria-hidden="true">⌂</span><span data-i18n="nav.home">Accueil</span></a>
+        <a class="active" href="/styles"><span class="sidebar-icon" aria-hidden="true">◈</span><span data-i18n="nav.styles">Styles</span></a>
+        <a href="/settings"><span class="sidebar-icon" aria-hidden="true">⚙</span><span data-i18n="nav.settings">Paramètres</span></a>
       </nav>
+      <div class="sidebar-meta"><span data-i18n="app.versionLabel">Version</span><strong data-app-version>—</strong></div>
+    </aside>
 
-      <section class="page-heading">
-        <p class="eyebrow" data-i18n="styles.eyebrow">APPARENCE</p>
-        <h2 data-i18n="styles.heading">Styles de l’overlay</h2>
-        <p class="intro" data-i18n="styles.intro">Personnalise l’habillage affiché dans OBS et vérifie immédiatement le résultat.</p>
-      </section>
-
-      <section class="settings-card skin-card">
-        <div class="setting-copy">
-          <h3 data-i18n="settings.skin.title">Style de l’overlay</h3>
-          <p data-i18n="settings.skin.description">Choisis l’habillage affiché dans OBS. Le changement est immédiat dans l’aperçu et dans OBS.</p>
+    <main class="styles-workspace">
+      <section class="style-library" aria-labelledby="styles-heading">
+        <div class="library-heading">
+          <div>
+            <p class="workspace-eyebrow" data-i18n="styles.eyebrow">APPARENCE</p>
+            <h1 id="styles-heading" data-i18n="styles.library">Bibliothèque de styles</h1>
+          </div>
+          <label class="style-search" for="style-search">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.15a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"/></svg>
+            <span class="sr-only" data-i18n="styles.search">Rechercher un style</span>
+            <input id="style-search" type="search" data-i18n-placeholder="styles.search" placeholder="Rechercher un style">
+          </label>
         </div>
+
+        <div class="style-filters" role="group" data-i18n-aria-label="styles.filters" aria-label="Filtrer les styles">
+          <button class="style-filter active" type="button" data-filter="all" aria-pressed="true" data-i18n="styles.filter.all">Tous</button>
+          <button class="style-filter" type="button" data-filter="modern" aria-pressed="false" data-i18n="styles.filter.modern">Moderne</button>
+          <button class="style-filter" type="button" data-filter="retro" aria-pressed="false" data-i18n="styles.filter.retro">Rétro</button>
+          <button class="style-filter" type="button" data-filter="minimal" aria-pressed="false" data-i18n="styles.filter.minimal">Minimal</button>
+        </div>
+
         <fieldset class="skin-options" data-i18n-aria-label="settings.skin.title" aria-label="Style de l’overlay">
           <legend class="sr-only" data-i18n="settings.skin.title">Style de l’overlay</legend>
-          <label class="skin-option" data-skin-option="luna">
+
+          <label class="skin-option" data-skin-option="luna" data-category="retro">
             <input type="radio" name="skin" value="luna">
             <span class="skin-preview luna-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.luna">Luna</strong><small data-i18n="settings.skin.lunaDescription">Bleu Windows XP, brillant et nostalgique.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.luna">Luna</strong><small data-i18n="settings.skin.lunaDescription">Bleu Windows XP, brillant et nostalgique.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="aura">
+
+          <label class="skin-option" data-skin-option="aura" data-category="minimal modern">
             <input type="radio" name="skin" value="aura">
             <span class="skin-preview aura-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.aura">Aura</strong><small data-i18n="settings.skin.auraDescription">Le style sombre et lumineux original.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.aura">Aura</strong><small data-i18n="settings.skin.auraDescription">Le style sombre et lumineux original.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="spectrum">
+
+          <label class="skin-option" data-skin-option="spectrum" data-category="modern">
             <input type="radio" name="skin" value="spectrum">
             <span class="skin-preview spectrum-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.spectrum">Spectrum</strong><small data-i18n="settings.skin.spectrumDescription">Spectrum cyan et violet en grand format, derrière la pochette.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.spectrum">Spectrum</strong><small data-i18n="settings.skin.spectrumDescription">Spectrum cyan et violet en grand format.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="battery">
+
+          <label class="skin-option" data-skin-option="battery" data-category="modern">
             <input type="radio" name="skin" value="battery">
             <span class="skin-preview battery-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.battery">Battery</strong><small data-i18n="settings.skin.batteryDescription">Halos et ondes colorées qui réagissent à la musique.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.battery">Battery</strong><small data-i18n="settings.skin.batteryDescription">Halos et ondes colorées réactives.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="meter">
+
+          <label class="skin-option" data-skin-option="meter" data-category="retro">
             <input type="radio" name="skin" value="meter">
             <span class="skin-preview meter-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.meter">VU Meter LED</strong><small data-i18n="settings.skin.meterDescription">Colonnes vertes, jaunes et rouges avec des crêtes lumineuses.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.meter">VU Meter LED</strong><small data-i18n="settings.skin.meterDescription">Colonnes LED avec crêtes lumineuses.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="oscilloscope">
+
+          <label class="skin-option" data-skin-option="oscilloscope" data-category="retro minimal">
             <input type="radio" name="skin" value="oscilloscope">
             <span class="skin-preview oscilloscope-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.oscilloscope">Oscilloscope</strong><small data-i18n="settings.skin.oscilloscopeDescription">Écran CRT vert avec une trace audio lumineuse.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.oscilloscope">Oscilloscope</strong><small data-i18n="settings.skin.oscilloscopeDescription">Écran CRT vert et trace audio.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="winamp">
+
+          <label class="skin-option" data-skin-option="winamp" data-category="retro">
             <input type="radio" name="skin" value="winamp">
             <span class="skin-preview winamp-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.winamp">Winamp Classic</strong><small data-i18n="settings.skin.winampDescription">Métal, afficheur vert et esprit lecteur MP3.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.winamp">Winamp Classic</strong><small data-i18n="settings.skin.winampDescription">Métal, afficheur vert et spectrum.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="glass">
+
+          <label class="skin-option" data-skin-option="glass" data-category="minimal modern">
             <input type="radio" name="skin" value="glass">
             <span class="skin-preview glass-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.glass">Glass</strong><small data-i18n="settings.skin.glassDescription">Verre bleuté et lecteur Windows aérien.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.glass">Glass</strong><small data-i18n="settings.skin.glassDescription">Verre bleuté et ondes lumineuses.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
-          <label class="skin-option" data-skin-option="neon">
+
+          <label class="skin-option" data-skin-option="neon" data-category="retro modern">
             <input type="radio" name="skin" value="neon">
             <span class="skin-preview neon-preview" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="skin-choice"><strong data-i18n="settings.skin.neon">Néon rétro</strong><small data-i18n="settings.skin.neonDescription">Grille synthwave, cyan et magenta, avec barres lumineuses.</small></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.neon">Néon rétro</strong><small data-i18n="settings.skin.neonDescription">Grille synthwave cyan et magenta.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
         </fieldset>
-        <div class="skin-preview-action">
-          <div>
-            <strong data-i18n="settings.preview.title">Aperçu en direct</strong>
-            <small data-i18n="settings.preview.description">Ouvre une fenêtre qui reproduit le thème sélectionné dans OBS.</small>
-          </div>
-          <button id="open-preview" type="button" data-i18n="settings.preview.open">Ouvrir l’aperçu</button>
-        </div>
-        <div id="neon-palette-control" class="neon-palette-control" hidden>
-          <div class="setting-copy">
-            <h4 data-i18n="settings.neonPalette.title">Palette néon</h4>
-            <p data-i18n="settings.neonPalette.description">Change les couleurs du thème néon sans modifier sa mise en page.</p>
-          </div>
-          <label class="neon-palette-select" for="neon-palette">
-            <span class="sr-only" data-i18n="settings.neonPalette.label">Palette néon</span>
-            <select id="neon-palette">
-              <option value="violet-cyan" data-i18n="settings.neonPalette.violetCyan">Violet et cyan</option>
-              <option value="sunset" data-i18n="settings.neonPalette.sunset">Coucher de soleil</option>
-              <option value="laser" data-i18n="settings.neonPalette.laser">Laser vert</option>
-            </select>
-          </label>
-        </div>
-        <div id="spectrum-palette-control" class="spectrum-palette-control" hidden>
-          <div class="setting-copy">
-            <h4 data-i18n="settings.spectrumPalette.title">Palette Spectrum</h4>
-            <p data-i18n="settings.spectrumPalette.description">Choisis une variation inspirée de Bars and Waves.</p>
-          </div>
-          <label class="spectrum-palette-select" for="spectrum-palette">
-            <span class="sr-only" data-i18n="settings.spectrumPalette.label">Palette Spectrum</span>
-            <select id="spectrum-palette">
-              <option value="modern" data-i18n="settings.spectrumPalette.modern">Moderne</option>
-              <option value="ocean-mist" data-i18n="settings.spectrumPalette.oceanMist">Ocean Mist</option>
-              <option value="fire-storm" data-i18n="settings.spectrumPalette.fireStorm">Fire Storm</option>
-              <option value="scope" data-i18n="settings.spectrumPalette.scope">Scope</option>
-            </select>
-          </label>
-        </div>
+        <p id="styles-empty" class="styles-empty" hidden data-i18n="styles.empty">Aucun style ne correspond à cette recherche.</p>
       </section>
-      <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des styles…</p>
+
+      <aside class="style-inspector" aria-labelledby="inspector-title">
+        <div class="inspector-topline">
+          <div><p class="workspace-eyebrow" data-i18n="styles.customizeEyebrow">SÉLECTION</p><h2 id="inspector-title" data-i18n="styles.customize">Personnalisation</h2></div>
+          <span id="service-status" class="online-status"><i></i><span data-i18n="styles.online">En ligne</span></span>
+        </div>
+
+        <div class="inspector-preview-shell">
+          <span id="inspector-preview" class="skin-preview luna-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+        </div>
+        <div class="inspector-selection-copy">
+          <h3 id="selected-style-name">Luna</h3>
+          <p id="selected-style-description"></p>
+        </div>
+
+        <fieldset id="spectrum-palette-control" class="palette-control" hidden>
+          <legend data-i18n="settings.spectrumPalette.title">Palette Spectrum</legend>
+          <div class="palette-grid">
+            <label><input type="radio" name="spectrum-palette" value="modern"><span class="palette-swatch spectrum-modern"></span><span data-i18n="settings.spectrumPalette.modern">Moderne</span></label>
+            <label><input type="radio" name="spectrum-palette" value="ocean-mist"><span class="palette-swatch spectrum-ocean"></span><span data-i18n="settings.spectrumPalette.oceanMist">Ocean Mist</span></label>
+            <label><input type="radio" name="spectrum-palette" value="fire-storm"><span class="palette-swatch spectrum-fire"></span><span data-i18n="settings.spectrumPalette.fireStorm">Fire Storm</span></label>
+            <label><input type="radio" name="spectrum-palette" value="scope"><span class="palette-swatch spectrum-scope"></span><span data-i18n="settings.spectrumPalette.scope">Scope</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset id="neon-palette-control" class="palette-control" hidden>
+          <legend data-i18n="settings.neonPalette.title">Palette néon</legend>
+          <div class="palette-grid palette-grid-three">
+            <label><input type="radio" name="neon-palette" value="violet-cyan"><span class="palette-swatch neon-violet"></span><span data-i18n="settings.neonPalette.violetCyan">Violet et cyan</span></label>
+            <label><input type="radio" name="neon-palette" value="sunset"><span class="palette-swatch neon-sunset"></span><span data-i18n="settings.neonPalette.sunset">Coucher de soleil</span></label>
+            <label><input type="radio" name="neon-palette" value="laser"><span class="palette-swatch neon-laser"></span><span data-i18n="settings.neonPalette.laser">Laser vert</span></label>
+          </div>
+        </fieldset>
+
+        <div class="inspector-actions">
+          <button id="apply-style" class="primary-action" type="button" data-i18n="styles.apply">Appliquer le style</button>
+        </div>
+        <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des styles…</p>
+
+        <section class="inline-live-preview" aria-labelledby="live-preview-heading">
+          <div class="live-preview-heading">
+            <div>
+              <p class="workspace-eyebrow" data-i18n="styles.livePreviewEyebrow">RENDU OBS</p>
+              <h3 id="live-preview-heading" data-i18n="styles.livePreview">Aperçu en direct</h3>
+            </div>
+            <span class="live-preview-badge"><i></i>LIVE</span>
+          </div>
+          <div id="live-preview-viewport" class="live-preview-viewport">
+            <iframe id="live-preview-frame" src="/?debug&amp;preview&amp;embedded" tabindex="-1" data-i18n-title="styles.livePreviewFrameTitle" title="Aperçu en direct de l’overlay OBS"></iframe>
+          </div>
+          <p data-i18n="styles.livePreviewHint">Le rendu suit le morceau, l’audio et le style appliqué en temps réel.</p>
+        </section>
+      </aside>
     </main>
     <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/shell.js"></script>
     <script type="module" src="/styles.js"></script>
   </body>
 </html>

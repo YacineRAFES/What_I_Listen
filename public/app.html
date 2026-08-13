@@ -7,63 +7,84 @@
     <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/app.css">
   </head>
-  <body>
-    <main class="app-shell">
-      <header class="app-header">
-        <div class="app-brand">
-          <img class="app-logo" src="/app-icon.svg" alt="" aria-hidden="true">
-          <div>
-            <p class="eyebrow" data-i18n="app.eyebrow">LECTURE EN COURS</p>
-            <h1>What I Listen <span>— Deezer</span></h1>
-          </div>
+  <body class="app-layout home-page">
+    <header class="window-titlebar">
+      <div class="window-brand" aria-label="What I Listen">
+        <img src="/app-icon.svg" alt="" aria-hidden="true">
+        <span>What I Listen</span>
+      </div>
+    </header>
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a class="active" href="/app"><span class="sidebar-icon" aria-hidden="true">⌂</span><span data-i18n="nav.home">Accueil</span></a>
+        <a href="/styles"><span class="sidebar-icon" aria-hidden="true">◈</span><span data-i18n="nav.styles">Styles</span></a>
+        <a href="/settings"><span class="sidebar-icon" aria-hidden="true">⚙</span><span data-i18n="nav.settings">Paramètres</span></a>
+      </nav>
+      <div class="sidebar-meta"><span data-i18n="app.versionLabel">Version</span><strong data-app-version>—</strong></div>
+    </aside>
+
+    <main class="app-shell home-shell">
+      <header class="page-toolbar">
+        <div>
+          <p class="workspace-eyebrow" data-i18n="app.dashboard.eyebrow">TABLEAU DE BORD</p>
+          <h1 data-i18n="nav.home">Accueil</h1>
+          <p class="page-intro" data-i18n="app.dashboard.intro">Surveille la lecture et le rendu envoyé vers OBS.</p>
         </div>
-        <div class="header-actions">
-          <div id="connection" class="connection checking" data-i18n="app.connection.checking">Connexion…</div>
-        </div>
+        <div id="connection" class="connection checking" data-i18n="app.connection.checking">Connexion…</div>
       </header>
 
-      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
-        <a class="active" href="/app" data-i18n="nav.home">Accueil</a>
-        <a href="/styles" data-i18n="nav.styles">Styles</a>
-        <a href="/settings" data-i18n="nav.settings">Paramètres</a>
-      </nav>
-
-      <section class="track-card" aria-live="polite">
-        <img id="cover" class="cover" data-i18n-alt="app.track.coverAlt" alt="Pochette du morceau en cours">
-        <div class="track-copy">
-          <p id="playback" class="playback" data-i18n="app.track.searching">Recherche de Deezer…</p>
-          <h2 id="title" data-i18n="app.track.none">Aucun morceau détecté</h2>
-          <p id="artist" data-i18n="app.track.prompt">Lance Deezer et joue un titre.</p>
-          <p id="album" class="album"></p>
-        </div>
-      </section>
-
-      <section class="guide">
-        <div class="guide-heading">
-          <div>
-            <p class="eyebrow" data-i18n="app.guide.eyebrow">CONFIGURATION UNIQUE</p>
-            <h2 data-i18n="app.guide.title">Ajouter l’overlay dans OBS</h2>
+      <div class="home-grid">
+        <section class="dashboard-panel now-playing-panel" aria-live="polite">
+          <div class="panel-heading">
+            <div><p class="workspace-eyebrow" data-i18n="app.eyebrow">LECTURE EN COURS</p><h2 data-i18n="app.dashboard.nowPlaying">Morceau détecté</h2></div>
+            <span id="playback" class="playback" data-i18n="app.track.searching">Recherche de Deezer…</span>
           </div>
-          <span class="guide-badge" data-i18n="app.guide.badge">Source Navigateur</span>
-        </div>
+          <div class="track-card">
+            <img id="cover" class="cover" src="/app-icon.svg" data-i18n-alt="app.track.coverAlt" alt="Pochette du morceau en cours">
+            <div class="track-copy">
+              <h2 id="title" data-i18n="app.track.none">Aucun morceau détecté</h2>
+              <p id="artist" data-i18n="app.track.prompt">Lance Deezer et joue un titre.</p>
+              <p id="album" class="album"></p>
+              <div class="track-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </section>
 
-        <ol>
-          <li data-i18n="app.guide.step1">Garde cette application ouverte pendant le stream.</li>
-          <li data-i18n="app.guide.step2">Dans OBS, dans Sources, clique sur + puis choisis Navigateur.</li>
-          <li data-i18n="app.guide.step3">Donne-lui un nom, par exemple What I Listen — Deezer.</li>
-          <li data-i18n="app.guide.step4">Colle l’URL locale ci-dessous, puis règle la taille sur 520 × 130.</li>
-        </ol>
+        <section class="dashboard-panel home-live-panel">
+          <div class="panel-heading compact-heading">
+            <div><p class="workspace-eyebrow" data-i18n="styles.livePreviewEyebrow">RENDU OBS</p><h2 data-i18n="styles.livePreview">Aperçu en direct</h2></div>
+            <span class="live-preview-badge"><i></i>LIVE</span>
+          </div>
+          <div id="home-preview-viewport" class="home-preview-viewport">
+            <iframe id="home-preview-frame" src="/?debug&amp;preview&amp;embedded" tabindex="-1" data-i18n-title="styles.livePreviewFrameTitle" title="Aperçu en direct de l’overlay OBS"></iframe>
+          </div>
+          <div class="preview-meta"><span data-i18n="app.dashboard.browserSource">Source Navigateur active</span><strong>520 × 130</strong></div>
+        </section>
 
-        <div class="url-box">
-          <code id="obs-url">http://127.0.0.1:38491/</code>
-          <button id="copy-url" type="button" data-i18n="app.guide.copy">Copier l’URL</button>
-        </div>
-        <p class="hint" data-i18n="app.guide.hint">L’overlay s’affiche uniquement lorsqu’un morceau Deezer est détecté. Masque ou affiche la source avec l’icône œil d’OBS.</p>
-      </section>
-
+        <section class="dashboard-panel obs-setup-panel">
+          <div class="panel-heading">
+            <div><p class="workspace-eyebrow" data-i18n="app.guide.eyebrow">CONFIGURATION UNIQUE</p><h2 data-i18n="app.guide.title">Ajouter l’overlay dans OBS</h2></div>
+            <span class="guide-badge" data-i18n="app.guide.badge">Source Navigateur</span>
+          </div>
+          <div class="setup-content">
+            <ol class="setup-steps">
+              <li data-i18n="app.guide.step1">Garde cette application ouverte pendant le stream.</li>
+              <li data-i18n="app.guide.step2">Dans OBS, dans Sources, clique sur + puis choisis Navigateur.</li>
+              <li data-i18n="app.guide.step3">Donne-lui un nom, par exemple What I Listen — Deezer.</li>
+              <li data-i18n="app.guide.step4">Colle l’URL locale ci-dessous, puis règle la taille sur 520 × 130.</li>
+            </ol>
+            <div class="setup-url-column">
+              <label class="url-label" for="copy-url" data-i18n="app.dashboard.localUrl">URL locale de l’overlay</label>
+              <div class="url-box"><code id="obs-url">http://127.0.0.1:38491/</code><button id="copy-url" type="button" data-i18n="app.guide.copy">Copier l’URL</button></div>
+              <p class="hint" data-i18n="app.guide.hint">L’overlay s’affiche uniquement lorsqu’un morceau Deezer est détecté.</p>
+            </div>
+          </div>
+        </section>
+      </div>
       <p id="error" class="error" role="status"></p>
     </main>
     <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/shell.js"></script>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

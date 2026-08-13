@@ -9,10 +9,26 @@ interface AudioOutputDevice {
   isDefault: boolean;
 }
 
+interface AppRelease {
+  version: string;
+  title: string;
+  publishedAt: string;
+  notes: string;
+  isCurrent: boolean;
+  canInstall: boolean;
+}
+
+interface AppUpdateInfo {
+  currentVersion: string;
+  releases: AppRelease[];
+  updateAvailable: boolean;
+}
+
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope';
 type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
+type AppTheme = 'dark' | 'light';
 
 interface OverlaySettings {
   skin: OverlaySkin;
@@ -22,6 +38,7 @@ interface OverlaySettings {
   startHidden: boolean;
   titleMarquee: boolean;
   language: 'fr' | 'en';
+  appTheme: AppTheme;
 }
 
 interface NowPlayingData {
@@ -56,6 +73,10 @@ interface Window {
   whatIListen?: {
     openPreview(): Promise<void>;
     listAudioOutputs(): Promise<AudioOutputDevice[]>;
+    getAppVersion(): Promise<string>;
+    getUpdateInfo(forceRefresh?: boolean): Promise<AppUpdateInfo>;
+    installRelease(version: string): Promise<void>;
+    openChangelog(): Promise<void>;
   };
 }
 

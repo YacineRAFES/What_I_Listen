@@ -8,91 +8,78 @@
     <link rel="stylesheet" href="/app.css">
     <link rel="stylesheet" href="/settings.css">
   </head>
-  <body>
-    <main class="app-shell">
-      <header class="app-header">
-        <div class="app-brand">
-          <img class="app-logo" src="/app-icon.svg" alt="" aria-hidden="true">
-          <div>
-            <p class="eyebrow">WHAT I LISTEN</p>
-            <h1>What I Listen <span>— Deezer</span></h1>
-          </div>
+  <body class="app-layout settings-page">
+    <header class="window-titlebar">
+      <div class="window-brand" aria-label="What I Listen"><img src="/app-icon.svg" alt="" aria-hidden="true"><span>What I Listen</span></div>
+    </header>
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app"><span class="sidebar-icon" aria-hidden="true">⌂</span><span data-i18n="nav.home">Accueil</span></a>
+        <a href="/styles"><span class="sidebar-icon" aria-hidden="true">◈</span><span data-i18n="nav.styles">Styles</span></a>
+        <a class="active" href="/settings"><span class="sidebar-icon" aria-hidden="true">⚙</span><span data-i18n="nav.settings">Paramètres</span></a>
+      </nav>
+      <div class="sidebar-meta"><span data-i18n="app.versionLabel">Version</span><strong data-app-version>—</strong></div>
+    </aside>
+
+    <main class="app-shell settings-shell">
+      <header class="page-toolbar">
+        <div>
+          <p class="workspace-eyebrow" data-i18n="settings.eyebrow">APPLICATION</p>
+          <h1 data-i18n="settings.heading">Paramètres</h1>
+          <p class="page-intro" data-i18n="settings.intro">Choisis la façon dont What I Listen se comporte lorsque tu le lances.</p>
         </div>
+        <span class="settings-saved-indicator"><i></i><span data-i18n="settings.autoSave">Enregistrement automatique</span></span>
       </header>
 
-      <nav class="main-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
-        <a href="/app" data-i18n="nav.home">Accueil</a>
-        <a href="/styles" data-i18n="nav.styles">Styles</a>
-        <a class="active" href="/settings" data-i18n="nav.settings">Paramètres</a>
-      </nav>
+      <div class="settings-grid">
+        <section class="settings-panel general-panel">
+          <header class="settings-section-heading"><span class="settings-section-icon" aria-hidden="true">⌁</span><div><h2 data-i18n="settings.general.title">Général</h2><p data-i18n="settings.general.description">Comportement de la fenêtre et de l’overlay.</p></div></header>
+          <div class="setting-row">
+            <div class="setting-copy"><h3 data-i18n="settings.startHidden.title">Démarrer discrètement</h3><p data-i18n="settings.startHidden.description">Ouvre l’application près de l’horloge Windows.</p></div>
+            <label class="switch" data-i18n-title="settings.startHidden.title" title="Démarrer discrètement"><input id="start-hidden" type="checkbox"><span class="slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div class="setting-copy"><h3 data-i18n="settings.titleMarquee.title">Défilement continu des titres longs</h3><p data-i18n="settings.titleMarquee.description">Fait défiler horizontalement les titres trop longs.</p></div>
+            <label class="switch" data-i18n-title="settings.titleMarquee.title" title="Défilement continu des titres longs"><input id="title-marquee" type="checkbox"><span class="slider"></span></label>
+          </div>
+        </section>
 
-      <section class="page-heading">
-        <p class="eyebrow" data-i18n="settings.eyebrow">APPLICATION</p>
-        <h2 data-i18n="settings.heading">Paramètres</h2>
-        <p class="intro" data-i18n="settings.intro">Choisis la façon dont What I Listen se comporte lorsque tu le lances.</p>
-      </section>
+        <section class="settings-panel language-panel">
+          <header class="settings-section-heading"><span class="settings-section-icon" aria-hidden="true">文</span><div><h2 data-i18n="settings.interface.title">Interface</h2><p data-i18n="settings.interface.description">Thème et langue utilisés dans l’application.</p></div></header>
+          <div class="setting-row theme-row">
+            <div class="setting-copy"><h3 data-i18n="settings.theme.title">Thème de l’application</h3><p data-i18n="settings.theme.description">Choisis une interface sombre ou claire.</p></div>
+            <fieldset class="theme-options" data-i18n-aria-label="settings.theme.title" aria-label="Thème de l’application">
+              <legend class="sr-only" data-i18n="settings.theme.title">Thème de l’application</legend>
+              <label><input type="radio" name="app-theme" value="dark"><span class="theme-choice-icon dark-choice" aria-hidden="true"></span><span data-i18n="settings.theme.dark">Sombre</span></label>
+              <label><input type="radio" name="app-theme" value="light"><span class="theme-choice-icon light-choice" aria-hidden="true"></span><span data-i18n="settings.theme.light">Clair</span></label>
+            </fieldset>
+          </div>
+          <div class="setting-row language-row">
+            <div class="setting-copy"><h3 data-i18n="settings.language.title">Langue de l’application</h3><p data-i18n="settings.language.description">Choisis la langue de l’application et de l’overlay.</p></div>
+            <label class="select-control language-select" for="language"><span class="sr-only" data-i18n="settings.language.label">Langue de l’application</span><select id="language" name="language"><option value="fr">Français</option><option value="en">English</option></select></label>
+          </div>
+        </section>
 
-      <section class="settings-card">
-        <div class="setting-copy">
-          <h3 data-i18n="settings.startHidden.title">Démarrer discrètement</h3>
-          <p data-i18n="settings.startHidden.description">Ouvre l’application près de l’horloge Windows. L’overlay OBS fonctionne même si la fenêtre est masquée.</p>
-        </div>
-        <label class="switch" data-i18n-title="settings.startHidden.title" title="Démarrer discrètement">
-          <input id="start-hidden" type="checkbox">
-          <span class="slider"></span>
-        </label>
-      </section>
+        <section class="settings-panel audio-source-card">
+          <header class="settings-section-heading"><span class="settings-section-icon" aria-hidden="true">≋</span><div><h2 data-i18n="settings.audioSection.title">Audio et spectrum</h2><p data-i18n="settings.audioSection.description">Choisis la sortie Windows analysée en temps réel.</p></div></header>
+          <div class="audio-setting-content">
+            <div class="setting-copy"><h3 data-i18n="settings.audio.title">Sortie audio du spectrum</h3><p data-i18n="settings.audio.description">Choisis la sortie Windows dont le spectrum doit analyser la musique.</p></div>
+            <div class="audio-source-control">
+              <label class="select-control audio-source-select" for="audio-output-device"><span class="sr-only" data-i18n="settings.audio.label">Sortie audio à analyser</span><select id="audio-output-device" name="audio-output-device"><option value="" data-i18n="settings.audio.systemMix">Sortie Windows par défaut</option></select></label>
+              <button id="refresh-audio-outputs" type="button" data-i18n="settings.audio.refresh">Actualiser les sorties</button>
+            </div>
+          </div>
+        </section>
 
-      <section class="settings-card">
-        <div class="setting-copy">
-          <h3 data-i18n="settings.titleMarquee.title">Défilement continu des titres longs</h3>
-          <p data-i18n="settings.titleMarquee.description">Fait défiler horizontalement le titre du morceau dans l’overlay OBS lorsqu’il ne tient pas sur une ligne.</p>
-        </div>
-        <label class="switch" data-i18n-title="settings.titleMarquee.title" title="Défilement continu des titres longs">
-          <input id="title-marquee" type="checkbox">
-          <span class="slider"></span>
-        </label>
-      </section>
-
-      <section class="settings-card audio-source-card">
-        <div class="setting-copy">
-          <h3 data-i18n="settings.audio.title">Sortie audio du spectrum</h3>
-          <p data-i18n="settings.audio.description">Choisis la sortie Windows dont le spectrum doit analyser la musique. Sélectionne SteelSeries Sonar - Media pour Deezer.</p>
-        </div>
-        <div class="audio-source-control">
-          <label class="audio-source-select" for="audio-output-device">
-            <span class="sr-only" data-i18n="settings.audio.label">Sortie audio à analyser</span>
-            <select id="audio-output-device" name="audio-output-device">
-              <option value="" data-i18n="settings.audio.systemMix">Sortie Windows par défaut</option>
-            </select>
-          </label>
-          <button id="refresh-audio-outputs" type="button" data-i18n="settings.audio.refresh">Actualiser les sorties</button>
-        </div>
-      </section>
-
-      <section class="settings-card language-card">
-        <div class="setting-copy">
-          <h3 data-i18n="settings.language.title">Langue de l’application</h3>
-          <p data-i18n="settings.language.description">Choisis la langue utilisée dans l’application et dans l’overlay OBS.</p>
-        </div>
-        <label class="language-select" for="language">
-          <span class="sr-only" data-i18n="settings.language.label">Langue de l’application</span>
-          <select id="language" name="language">
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-      </section>
-
-      <section class="settings-card help-card">
-        <div class="setting-copy">
-          <h3 data-i18n="settings.quit.title">Quitter l’application</h3>
-          <p data-i18n="settings.quit.description">Utilise le clic droit sur l’icône près de l’horloge, puis Quitter, pour arrêter le service et l’overlay.</p>
-        </div>
-      </section>
+        <section class="settings-panel help-card">
+          <header class="settings-section-heading"><span class="settings-section-icon" aria-hidden="true">?</span><div><h2 data-i18n="settings.help.title">Aide</h2><p data-i18n="settings.help.description">Informations utiles pour gérer l’application.</p></div></header>
+          <div class="setting-row help-row"><div class="setting-copy"><h3 data-i18n="settings.quit.title">Quitter l’application</h3><p data-i18n="settings.quit.description">Utilise le clic droit sur l’icône près de l’horloge, puis Quitter.</p></div></div>
+        </section>
+      </div>
       <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des paramètres…</p>
     </main>
     <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/shell.js"></script>
     <script type="module" src="/settings.js"></script>
   </body>
 </html>

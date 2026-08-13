@@ -3,16 +3,24 @@ const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!
 const language = document.querySelector<HTMLSelectElement>('#language')!;
 const audioOutputDevice = document.querySelector<HTMLSelectElement>('#audio-output-device')!;
 const refreshAudioOutputsButton = document.querySelector<HTMLButtonElement>('#refresh-audio-outputs')!;
+const appThemeOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="app-theme"]')];
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const { t } = window.i18n;
 
 let statusKey = 'settings.loading';
 let savedAudioOutputDeviceId = '';
 let audioOutputs: AudioOutputDevice[] = [];
+let savedAppTheme: AppTheme = 'dark';
 
 function setStatus(key: string) {
   statusKey = key;
   status.textContent = t(key);
+}
+
+function applyAppTheme(theme: AppTheme) {
+  document.documentElement.dataset.appTheme = theme;
+  localStorage.setItem('app-theme', theme);
+  appThemeOptions.forEach((option) => { option.checked = option.value === theme; });
 }
 
 async function saveSettings(payload: Partial<OverlaySettings>): Promise<OverlaySettings> {
@@ -53,6 +61,8 @@ async function load() {
     const response = await fetch('/api/settings', { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const settings = await response.json() as OverlaySettings;
+    savedAppTheme = settings.appTheme || 'dark';
+    applyAppTheme(savedAppTheme);
     startHidden.checked = settings.startHidden;
     titleMarquee.checked = settings.titleMarquee !== false;
     savedAudioOutputDeviceId = settings.audioOutputDeviceId || '';
@@ -69,6 +79,25 @@ async function load() {
     setStatus('settings.loadError');
   }
 }
+
+appThemeOptions.forEach((option) => option.addEventListener('change', async () => {
+  if (!option.checked) return;
+  const selectedTheme = option.value as AppTheme;
+  appThemeOptions.forEach((candidate) => { candidate.disabled = true; });
+  applyAppTheme(selectedTheme);
+  setStatus('settings.saving');
+  try {
+    const settings = await saveSettings({ appTheme: selectedTheme });
+    savedAppTheme = settings.appTheme;
+    applyAppTheme(savedAppTheme);
+    setStatus(selectedTheme === 'light' ? 'settings.themeLightSaved' : 'settings.themeDarkSaved');
+  } catch {
+    applyAppTheme(savedAppTheme);
+    setStatus('settings.saveError');
+  } finally {
+    appThemeOptions.forEach((candidate) => { candidate.disabled = false; });
+  }
+}));
 
 startHidden.addEventListener('change', async () => {
   const value = startHidden.checked;

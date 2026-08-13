@@ -25,6 +25,8 @@ let latestData: NowPlayingData | null = null;
 const query = new URLSearchParams(window.location.search);
 const debugMode = query.has('debug');
 const previewMode = query.has('preview');
+const embeddedMode = query.has('embedded');
+if (embeddedMode) document.documentElement.classList.add('embedded-preview');
 let lastAudioUpdate = 0;
 let titleMarqueeAnimationFrame: number | null = null;
 let titleMarqueeEnabled = true;
