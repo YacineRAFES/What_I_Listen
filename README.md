@@ -27,6 +27,19 @@ Cette configuration se fait une seule fois :
 
 L’overlay apparaît automatiquement quand Deezer publie un morceau dans les contrôles multimédia Windows, puis disparaît lorsqu’aucun morceau n’est détecté. Pour l’afficher ou le masquer pendant un stream, utilise l’icône œil de cette source dans OBS.
 
+## Envoyer les nouveaux morceaux dans Twitch avec SAMMI
+
+What I Listen peut envoyer un webhook local à SAMMI Core lorsqu’un nouveau couple titre/artiste est détecté. Une pause, une reprise ou une actualisation de pochette ne déclenche pas de second message.
+
+1. Dans **SAMMI Core > Settings**, active **Open Local API Server**. Le port par défaut est `9450`.
+2. Dans un deck SAMMI, crée un bouton et ajoute-lui un déclencheur **Webhook** dont le message est `what_i_listen_track_changed`.
+3. Dans les paramètres du bouton, active **Expose Payload**.
+4. Ajoute **Twitch: Send Chat Message** et saisis `/$payload.data.message$/` dans le champ du message. SAMMI encapsule les données personnalisées du webhook dans `payload.data`.
+5. Dans les paramètres de What I Listen, ouvre **SAMMI Core et Twitch**, saisis le port et l’éventuel mot de passe API, puis active l’intégration.
+6. Clique sur **Tester SAMMI et Twitch**. Un test réussi confirme que SAMMI Core a accepté le webhook ; le message apparaît dans Twitch lorsque le bouton et la connexion Twitch de SAMMI sont opérationnels.
+
+Le webhook contient aussi les champs `title`, `artist`, `album`, `source`, `playback`, `test` et `sentAt`. Le modèle de message accepte les marqueurs `{title}`, `{artist}`, `{album}` et `{source}`.
+
 ## En cas de problème
 
 - Ouvre l’application avant OBS et laisse-la ouverte.

@@ -3,19 +3,28 @@ const titleMarquee = document.querySelector<HTMLInputElement>('#title-marquee')!
 const language = document.querySelector<HTMLSelectElement>('#language')!;
 const audioOutputDevice = document.querySelector<HTMLSelectElement>('#audio-output-device')!;
 const refreshAudioOutputsButton = document.querySelector<HTMLButtonElement>('#refresh-audio-outputs')!;
+const sammiEnabled = document.querySelector<HTMLInputElement>('#sammi-enabled')!;
+const sammiPort = document.querySelector<HTMLInputElement>('#sammi-port')!;
+const sammiPassword = document.querySelector<HTMLInputElement>('#sammi-password')!;
+const sammiWebhookTrigger = document.querySelector<HTMLInputElement>('#sammi-webhook-trigger')!;
+const sammiMessageTemplate = document.querySelector<HTMLInputElement>('#sammi-message-template')!;
+const sammiPlaceholderButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-sammi-placeholder]')];
+const testSammiButton = document.querySelector<HTMLButtonElement>('#test-sammi')!;
 const openChangelogButton = document.querySelector<HTMLButtonElement>('#open-changelog')!;
 const appThemeOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="app-theme"]')];
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const { t } = window.i18n;
 
 let statusKey = 'settings.loading';
+let statusDetail = '';
 let savedAudioOutputDeviceId = '';
 let audioOutputs: AudioOutputDevice[] = [];
 let savedAppTheme: AppTheme = 'dark';
 
-function setStatus(key: string) {
+function setStatus(key: string, detail = '') {
   statusKey = key;
-  status.textContent = t(key);
+  statusDetail = detail;
+  status.textContent = `${t(key)}${detail ? ` ${detail}` : ''}`;
 }
 
 function applyAppTheme(theme: AppTheme) {
@@ -32,6 +41,38 @@ async function saveSettings(payload: Partial<OverlaySettings>): Promise<OverlayS
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json() as Promise<OverlaySettings>;
+}
+
+const sammiFields = [sammiEnabled, sammiPort, sammiPassword, sammiWebhookTrigger, sammiMessageTemplate];
+
+function setSammiControlsDisabled(disabled: boolean) {
+  sammiFields.forEach((field) => { field.disabled = disabled; });
+  sammiPlaceholderButtons.forEach((button) => { button.disabled = disabled; });
+  testSammiButton.disabled = disabled;
+}
+
+function sammiSettingsPayload(): Pick<OverlaySettings, 'sammiEnabled' | 'sammiPort' | 'sammiPassword' | 'sammiWebhookTrigger' | 'sammiMessageTemplate'> {
+  return {
+    sammiEnabled: sammiEnabled.checked,
+    sammiPort: Number.parseInt(sammiPort.value, 10),
+    sammiPassword: sammiPassword.value,
+    sammiWebhookTrigger: sammiWebhookTrigger.value.trim(),
+    sammiMessageTemplate: sammiMessageTemplate.value.trim(),
+  };
+}
+
+function applySammiSettings(settings: OverlaySettings) {
+  sammiEnabled.checked = settings.sammiEnabled === true;
+  sammiPort.value = String(settings.sammiPort || 9450);
+  sammiPassword.value = settings.sammiPassword || '';
+  sammiWebhookTrigger.value = settings.sammiWebhookTrigger || 'what_i_listen_track_changed';
+  sammiMessageTemplate.value = settings.sammiMessageTemplate || '🎵 En écoute : {artist} — {title}';
+}
+
+async function saveSammiSettings(): Promise<OverlaySettings> {
+  const settings = await saveSettings(sammiSettingsPayload());
+  applySammiSettings(settings);
+  return settings;
 }
 
 function renderAudioOutputOptions() {
@@ -67,6 +108,7 @@ async function load() {
     startHidden.checked = settings.startHidden;
     titleMarquee.checked = settings.titleMarquee !== false;
     savedAudioOutputDeviceId = settings.audioOutputDeviceId || '';
+    applySammiSettings(settings);
     renderAudioOutputOptions();
     try {
       await refreshAudioOutputs();
@@ -127,6 +169,53 @@ titleMarquee.addEventListener('change', async () => {
     setStatus('settings.saveError');
   } finally {
     titleMarquee.disabled = false;
+  }
+});
+
+sammiFields.forEach((field) => field.addEventListener('change', async () => {
+  setSammiControlsDisabled(true);
+  setStatus('settings.saving');
+  try {
+    await saveSammiSettings();
+    setStatus(sammiEnabled.checked ? 'settings.sammi.savedEnabled' : 'settings.sammi.savedDisabled');
+  } catch {
+    setStatus('settings.sammi.saveError');
+  } finally {
+    setSammiControlsDisabled(false);
+  }
+}));
+
+sammiPlaceholderButtons.forEach((button) => {
+  button.addEventListener('mousedown', (event) => event.preventDefault());
+  button.addEventListener('click', () => {
+    const placeholder = button.dataset.sammiPlaceholder;
+    if (!placeholder) return;
+    const hasActiveCursor = document.activeElement === sammiMessageTemplate;
+    const start = hasActiveCursor ? sammiMessageTemplate.selectionStart ?? sammiMessageTemplate.value.length : sammiMessageTemplate.value.length;
+    const end = hasActiveCursor ? sammiMessageTemplate.selectionEnd ?? start : start;
+    sammiMessageTemplate.setRangeText(placeholder, start, end, 'end');
+    sammiMessageTemplate.focus();
+    sammiMessageTemplate.dispatchEvent(new Event('change'));
+  });
+});
+
+testSammiButton.addEventListener('click', async () => {
+  setSammiControlsDisabled(true);
+  setStatus('settings.sammi.testing');
+  try {
+    await saveSammiSettings();
+    const response = await fetch('/api/sammi/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    const result = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+    setStatus('settings.sammi.testSuccess');
+  } catch (error) {
+    setStatus('settings.sammi.testError', error instanceof Error ? error.message : String(error));
+  } finally {
+    setSammiControlsDisabled(false);
   }
 });
 
@@ -198,7 +287,7 @@ openChangelogButton.addEventListener('click', async () => {
 document.addEventListener('app-language-change', () => {
   language.value = window.i18n.language;
   renderAudioOutputOptions();
-  setStatus(statusKey);
+  setStatus(statusKey, statusDetail);
 });
 
 load();

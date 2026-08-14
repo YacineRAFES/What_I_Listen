@@ -56,6 +56,11 @@ interface OverlaySettings {
   titleMarquee: boolean;
   language: 'fr' | 'en';
   appTheme: AppTheme;
+  sammiEnabled: boolean;
+  sammiPort: number;
+  sammiPassword: string;
+  sammiWebhookTrigger: string;
+  sammiMessageTemplate: string;
 }
 
 interface NowPlayingData {

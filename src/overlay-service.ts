@@ -20,6 +20,11 @@ const defaultSettings = Object.freeze({
   titleMarquee: true,
   language: 'fr',
   appTheme: 'dark',
+  sammiEnabled: false,
+  sammiPort: 9450,
+  sammiPassword: '',
+  sammiWebhookTrigger: 'what_i_listen_track_changed',
+  sammiMessageTemplate: '🎵 En écoute : {artist} — {title}',
 } satisfies OverlaySettings);
 const visualizerForSkin: Readonly<Record<ConcreteOverlaySkin, VisualizerMode>> = Object.freeze({
   luna: 'bars',
@@ -66,6 +71,7 @@ const windowsCoverRefreshDelaysMs = [1000, 3500] as const;
 const maxCoverBytes = 5 * 1024 * 1024;
 const maxCoverBase64Length = Math.ceil(maxCoverBytes * 4 / 3);
 const maxAudioSubscribers = 8;
+const sammiRequestTimeoutMs = 4_000;
 const securityHeaders = Object.freeze({
   'Content-Security-Policy': "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'",
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -185,6 +191,20 @@ function normalizeAppTheme(value: unknown): AppTheme {
   return typeof value === 'string' && appThemes.has(value) ? value as AppTheme : defaultSettings.appTheme;
 }
 
+function normalizeSammiPassword(value: unknown): string {
+  return typeof value === 'string' ? value.slice(0, 256) : defaultSettings.sammiPassword;
+}
+
+function normalizeSammiWebhookTrigger(value: unknown): string {
+  if (typeof value !== 'string') return defaultSettings.sammiWebhookTrigger;
+  return value.trim().slice(0, 100) || defaultSettings.sammiWebhookTrigger;
+}
+
+function normalizeSammiMessageTemplate(value: unknown): string {
+  if (typeof value !== 'string') return defaultSettings.sammiMessageTemplate;
+  return value.trim().slice(0, 500) || defaultSettings.sammiMessageTemplate;
+}
+
 function normalizeAudioLevels(value: unknown): AudioLevels | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Partial<AudioLevels>;
@@ -222,6 +242,11 @@ async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
       titleMarquee: typeof settings.titleMarquee === 'boolean' ? settings.titleMarquee : defaultSettings.titleMarquee,
       language: normalizeLanguage(settings.language),
       appTheme: normalizeAppTheme(settings.appTheme),
+      sammiEnabled: typeof settings.sammiEnabled === 'boolean' ? settings.sammiEnabled : defaultSettings.sammiEnabled,
+      sammiPort: parsePort(settings.sammiPort, defaultSettings.sammiPort),
+      sammiPassword: normalizeSammiPassword(settings.sammiPassword),
+      sammiWebhookTrigger: normalizeSammiWebhookTrigger(settings.sammiWebhookTrigger),
+      sammiMessageTemplate: normalizeSammiMessageTemplate(settings.sammiMessageTemplate),
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn(`Paramètres du visualiseur ignorés : ${errorMessage(error)}`);
@@ -282,6 +307,11 @@ export async function startOverlayService({
     titleMarquee: savedSettings.titleMarquee,
     language: savedSettings.language,
     appTheme: savedSettings.appTheme,
+    sammiEnabled: savedSettings.sammiEnabled,
+    sammiPort: savedSettings.sammiPort,
+    sammiPassword: savedSettings.sammiPassword,
+    sammiWebhookTrigger: savedSettings.sammiWebhookTrigger,
+    sammiMessageTemplate: savedSettings.sammiMessageTemplate,
     audio: {
       active: false,
       bands: Array(audioBandCount).fill(0),
@@ -303,11 +333,70 @@ export async function startOverlayService({
   let correctedCoverTrackKey = '';
   let correctedCoverThumbnail = '';
   let randomTrackKey = '';
+  let sammiTrackKey = '';
+  let mediaStateInitialized = false;
+  let sammiDeliveryQueue = Promise.resolve();
   let randomSkinTimer: ReturnType<typeof setTimeout> | undefined;
   const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
   const activeMetadataRefreshManagers = new Set<ReturnType<typeof createSessionManager>>();
   const settingsListeners = new Set<(settings: OverlaySettings) => void>();
   let closing = false;
+
+  function formatSammiMessage(track: Pick<ServiceState, 'title' | 'artist' | 'album' | 'source'>): string {
+    const values: Record<string, string> = {
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      source: track.source,
+    };
+    return state.sammiMessageTemplate.replace(/\{(title|artist|album|source)\}/gi, (_match, name: string) => (
+      values[name.toLowerCase()] ?? ''
+    ));
+  }
+
+  async function sendSammiWebhook(
+    track: Pick<ServiceState, 'title' | 'artist' | 'album' | 'source' | 'playback'>,
+    test: boolean,
+  ): Promise<void> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), sammiRequestTimeoutMs);
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (state.sammiPassword) headers.Authorization = state.sammiPassword;
+      const response = await fetch(`http://127.0.0.1:${state.sammiPort}/webhook`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          trigger: state.sammiWebhookTrigger,
+          title: track.title,
+          artist: track.artist,
+          album: track.album,
+          source: track.source,
+          playback: track.playback,
+          message: formatSammiMessage(track),
+          test,
+          sentAt: new Date().toISOString(),
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const detail = (await response.text()).trim().slice(0, 300);
+        throw new Error(`SAMMI Core a répondu HTTP ${response.status}${detail ? ` : ${detail}` : ''}`);
+      }
+    } catch (error) {
+      if (controller.signal.aborted) throw new Error('SAMMI Core ne répond pas dans le délai prévu.');
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  function queueSammiTrackChange(track: Pick<ServiceState, 'title' | 'artist' | 'album' | 'source' | 'playback'>): void {
+    sammiDeliveryQueue = sammiDeliveryQueue
+      .catch(() => undefined)
+      .then(() => sendSammiWebhook(track, false))
+      .catch((error) => console.warn(`Webhook SAMMI ignoré : ${errorMessage(error)}`));
+  }
 
   function applyRandomVisualSkin(): void {
     state.effectiveSkin = chooseRandomVisualSkin(state.effectiveSkin);
@@ -432,6 +521,22 @@ export async function startOverlayService({
     const changed = (['available', 'title', 'artist', 'album', 'playback', 'source', 'thumbnail'] as const)
       .some((key) => state[key] !== next[key]);
     Object.assign(state, next);
+    const nextSammiTrackKey = next.available ? [next.title, next.artist].join('\u001f') : sammiTrackKey;
+    if (!mediaStateInitialized) {
+      mediaStateInitialized = true;
+      sammiTrackKey = nextSammiTrackKey;
+    } else if (next.available && nextSammiTrackKey !== sammiTrackKey) {
+      sammiTrackKey = nextSammiTrackKey;
+      if (state.sammiEnabled) {
+        queueSammiTrackChange({
+          title: next.title,
+          artist: next.artist,
+          album: next.album,
+          source: next.source,
+          playback: next.playback ?? 'stopped',
+        });
+      }
+    }
     if (state.skin !== 'random' || !state.available) {
       randomTrackKey = '';
       syncRandomSkinTimer();
@@ -475,6 +580,11 @@ export async function startOverlayService({
       titleMarquee: state.titleMarquee,
       language: state.language,
       appTheme: state.appTheme,
+      sammiEnabled: state.sammiEnabled,
+      sammiPort: state.sammiPort,
+      sammiPassword: state.sammiPassword,
+      sammiWebhookTrigger: state.sammiWebhookTrigger,
+      sammiMessageTemplate: state.sammiMessageTemplate,
     };
   }
 
@@ -613,7 +723,12 @@ export async function startOverlayService({
         const updatesNeonPalette = Object.hasOwn(payload, 'neonPalette');
         const updatesSpectrumPalette = Object.hasOwn(payload, 'spectrumPalette');
         const updatesAudioOutputDeviceId = Object.hasOwn(payload, 'audioOutputDeviceId');
-        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId) throw new Error('Aucun paramètre à enregistrer.');
+        const updatesSammiEnabled = Object.hasOwn(payload, 'sammiEnabled');
+        const updatesSammiPort = Object.hasOwn(payload, 'sammiPort');
+        const updatesSammiPassword = Object.hasOwn(payload, 'sammiPassword');
+        const updatesSammiWebhookTrigger = Object.hasOwn(payload, 'sammiWebhookTrigger');
+        const updatesSammiMessageTemplate = Object.hasOwn(payload, 'sammiMessageTemplate');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId && !updatesSammiEnabled && !updatesSammiPort && !updatesSammiPassword && !updatesSammiWebhookTrigger && !updatesSammiMessageTemplate) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
         if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
@@ -622,6 +737,11 @@ export async function startOverlayService({
         if (updatesNeonPalette && (typeof payload.neonPalette !== 'string' || !neonPalettes.has(payload.neonPalette))) throw new Error('Palette néon inconnue.');
         if (updatesSpectrumPalette && (typeof payload.spectrumPalette !== 'string' || !spectrumPalettes.has(payload.spectrumPalette))) throw new Error('Palette Spectrum inconnue.');
         if (updatesAudioOutputDeviceId && (typeof payload.audioOutputDeviceId !== 'string' || payload.audioOutputDeviceId.length > 512)) throw new Error('Périphérique audio invalide.');
+        if (updatesSammiEnabled && typeof payload.sammiEnabled !== 'boolean') throw new Error('Activation SAMMI invalide.');
+        if (updatesSammiPort && (!Number.isInteger(payload.sammiPort) || Number(payload.sammiPort) < 1 || Number(payload.sammiPort) > 65535)) throw new Error('Port SAMMI invalide.');
+        if (updatesSammiPassword && (typeof payload.sammiPassword !== 'string' || payload.sammiPassword.length > 256)) throw new Error('Mot de passe SAMMI invalide.');
+        if (updatesSammiWebhookTrigger && (typeof payload.sammiWebhookTrigger !== 'string' || !payload.sammiWebhookTrigger.trim() || payload.sammiWebhookTrigger.length > 100)) throw new Error('Nom du webhook SAMMI invalide.');
+        if (updatesSammiMessageTemplate && (typeof payload.sammiMessageTemplate !== 'string' || !payload.sammiMessageTemplate.trim() || payload.sammiMessageTemplate.length > 500)) throw new Error('Modèle de message SAMMI invalide.');
         if (typeof payload.startHidden === 'boolean') state.startHidden = payload.startHidden;
         if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
         if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
@@ -629,6 +749,11 @@ export async function startOverlayService({
         if (typeof payload.neonPalette === 'string') state.neonPalette = payload.neonPalette as NeonPalette;
         if (typeof payload.spectrumPalette === 'string') state.spectrumPalette = payload.spectrumPalette as SpectrumPalette;
         if (typeof payload.audioOutputDeviceId === 'string') state.audioOutputDeviceId = normalizeAudioOutputDeviceId(payload.audioOutputDeviceId);
+        if (typeof payload.sammiEnabled === 'boolean') state.sammiEnabled = payload.sammiEnabled;
+        if (typeof payload.sammiPort === 'number') state.sammiPort = parsePort(payload.sammiPort, defaultSettings.sammiPort);
+        if (typeof payload.sammiPassword === 'string') state.sammiPassword = normalizeSammiPassword(payload.sammiPassword);
+        if (typeof payload.sammiWebhookTrigger === 'string') state.sammiWebhookTrigger = normalizeSammiWebhookTrigger(payload.sammiWebhookTrigger);
+        if (typeof payload.sammiMessageTemplate === 'string') state.sammiMessageTemplate = normalizeSammiMessageTemplate(payload.sammiMessageTemplate);
         if (typeof payload.skin === 'string') {
           state.skin = payload.skin as OverlaySkin;
           if (state.skin === 'random') applyRandomVisualSkin();
@@ -646,6 +771,25 @@ export async function startOverlayService({
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(settingsForClient()));
       } catch (error) {
         send(response, 400, 'application/json; charset=utf-8', JSON.stringify({ error: errorMessage(error) }));
+      }
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/sammi/test') {
+      const origin = requestHeader(request, 'origin');
+      const contentType = requestHeader(request, 'content-type').split(';', 1)[0]?.trim().toLowerCase();
+      if ((origin && origin !== serviceOrigin) || contentType !== 'application/json') {
+        send(response, 403, 'text/plain; charset=utf-8', 'Origine ou type de requête non autorisé.');
+        return;
+      }
+      try {
+        await readJsonBody(request);
+        const testTrack = state.available
+          ? { title: state.title, artist: state.artist, album: state.album, source: state.source, playback: state.playback }
+          : { title: 'Titre de test', artist: 'What I Listen', album: 'Test SAMMI', source: 'Deezer', playback: 'playing' };
+        await sendSammiWebhook(testTrack, true);
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify({ ok: true }));
+      } catch (error) {
+        send(response, 502, 'application/json; charset=utf-8', JSON.stringify({ error: errorMessage(error) }));
       }
       return;
     }

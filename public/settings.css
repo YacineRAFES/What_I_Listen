@@ -36,11 +36,25 @@
 .dark-choice { background: linear-gradient(135deg, #0a1725 50%, #3a4e62 51%); }
 .light-choice { background: linear-gradient(135deg, #fff 50%, #cce5f1 51%); border-color: #9db8c8; }
 .audio-source-card { grid-column: 1 / -1; }
+.sammi-card { grid-column: 1 / -1; }
 .audio-setting-content { display: grid; gap: 22px; grid-template-columns: minmax(240px, .85fr) minmax(360px, 1.15fr); padding: 20px; }
 .audio-source-control { align-items: center; display: flex; gap: 9px; justify-content: flex-end; }
 .audio-source-select { flex: 1; }
 .audio-source-select select { max-width: none; width: 100%; }
 .audio-source-control button { flex: 0 0 auto; margin: 0; min-height: 37px; white-space: nowrap; }
+.sammi-settings-content { display: grid; gap: 14px; grid-template-columns: minmax(150px, .35fr) minmax(260px, 1fr) minmax(220px, .75fr); padding: 20px; }
+.field-control { color: #a7b8c8; display: flex; flex-direction: column; font-size: 10px; font-weight: 700; gap: 7px; min-width: 0; }
+.field-control input { background: #071521; border: 1px solid rgba(102, 167, 207, .3); border-radius: 7px; color: #e9f3fb; font: inherit; font-size: 11px; min-height: 37px; min-width: 0; padding: 8px 10px; }
+.field-control input:focus-visible { outline: 2px solid #39c3f4; outline-offset: 2px; }
+.field-control input:disabled { cursor: wait; opacity: .55; }
+.field-control small { color: #71869a; font-size: 9px; font-weight: 500; line-height: 1.4; }
+.sammi-template-field { grid-column: 1 / -1; }
+.sammi-placeholder-shortcuts { display: flex; flex-wrap: wrap; gap: 6px; }
+.sammi-placeholder-shortcuts button { background: rgba(29, 111, 154, .13); border: 1px solid rgba(73, 188, 232, .24); border-radius: 6px; color: #73d7fb; font: 700 10px Consolas, monospace; margin: 0; min-height: 27px; padding: 5px 9px; }
+.sammi-placeholder-shortcuts button:hover { background: rgba(38, 146, 198, .23); border-color: rgba(89, 207, 250, .45); color: #d9f7ff; }
+.sammi-placeholder-shortcuts button:focus-visible { outline: 2px solid #45c7f6; outline-offset: 2px; }
+.sammi-placeholder-shortcuts button:disabled { cursor: wait; opacity: .55; }
+.sammi-test-row { align-items: center; border-top: 1px solid rgba(145, 178, 209, .1); display: flex; gap: 22px; grid-column: 1 / -1; justify-content: space-between; padding-top: 16px; }
 .help-row { min-height: 82px; }
 .secondary-action { background: #102b3e; border: 1px solid rgba(57, 184, 232, .24); color: #77d9fb; flex: 0 0 auto; margin: 0; white-space: nowrap; }
 .secondary-action:hover { background: #153a52; }
@@ -57,6 +71,12 @@ html[data-app-theme="light"] .settings-section-icon { background: #edf8fc; borde
 html[data-app-theme="light"] .slider { background: #dce5ec; border-color: #c8d4dd; }
 html[data-app-theme="light"] .slider::before { background: #758a9c; }
 html[data-app-theme="light"] .select-control select { background: #f7fafc; border-color: rgba(73, 112, 143, .25); color: #20384d; }
+html[data-app-theme="light"] .field-control { color: #5f7689; }
+html[data-app-theme="light"] .field-control input { background: #f7fafc; border-color: rgba(73, 112, 143, .25); color: #20384d; }
+html[data-app-theme="light"] .field-control small { color: #71869a; }
+html[data-app-theme="light"] .sammi-placeholder-shortcuts button { background: #edf8fc; border-color: #c7e8f4; color: #087eac; }
+html[data-app-theme="light"] .sammi-placeholder-shortcuts button:hover { background: #dff3fa; border-color: #9fd9ed; color: #075e80; }
+html[data-app-theme="light"] .sammi-test-row { border-color: rgba(67, 104, 134, .13); }
 html[data-app-theme="light"] .theme-options label { background: #f6f9fb; border-color: rgba(73, 112, 143, .22); color: #687d90; }
 html[data-app-theme="light"] .theme-options label:has(input:checked) { background: #eaf7fc; border-color: #1aa8df; color: #0b5776; }
 html[data-app-theme="light"] .secondary-action { background: #edf8fc; border-color: #c7e8f4; color: #087eac; }
@@ -66,12 +86,16 @@ html[data-app-theme="light"] .save-status { color: #208748; }
 @media (max-width: 1050px) {
   .settings-grid { grid-template-columns: 1fr; }
   .audio-source-card { grid-column: auto; }
+  .sammi-card { grid-column: auto; }
   .audio-setting-content { grid-template-columns: 1fr; }
+  .sammi-settings-content { grid-template-columns: 1fr; }
+  .sammi-template-field, .sammi-test-row { grid-column: auto; }
 }
 
 @media (max-width: 720px) {
   .settings-page { min-width: 0; }
   .page-toolbar { align-items: flex-start; flex-direction: column; }
-  .audio-source-control, .setting-row { align-items: flex-start; flex-direction: column; }
+  .audio-source-control, .setting-row, .sammi-test-row { align-items: flex-start; flex-direction: column; }
   .audio-source-control, .audio-source-select, .audio-source-select select { width: 100%; }
+  .sammi-test-row button { width: 100%; }
 }
