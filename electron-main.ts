@@ -111,9 +111,11 @@ function lockWindowToOverlay(window: ElectronBrowserWindow, serviceUrl: string):
 
 function showMainWindow() {
   if (!mainWindow) return createWindow({ showOnReady: true });
+  mainWindow.setSkipTaskbar(false);
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
+  destroyTray();
   return Promise.resolve();
 }
 
@@ -124,6 +126,7 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
     minWidth: 960,
     minHeight: 680,
     show: false,
+    skipTaskbar: false,
     movable: true,
     resizable: true,
     thickFrame: true,
@@ -149,6 +152,18 @@ function createWindow({ showOnReady = false }: { showOnReady?: boolean } = {}) {
 
   window.once('ready-to-show', () => {
     if (showOnReady) window.show();
+  });
+  window.on('close', (event) => {
+    if (isQuitting) return;
+    event.preventDefault();
+    window.hide();
+    app.quit();
+  });
+  window.on('minimize', () => {
+    if (isQuitting) return;
+    window.setSkipTaskbar(true);
+    window.hide();
+    createTray(overlayService?.settings().language ?? 'fr');
   });
   window.on('closed', () => { mainWindow = null; });
   const service = overlayService;
@@ -487,6 +502,7 @@ async function showPreviewWindow() {
 }
 
 function updateTray(language: OverlaySettings['language']): void {
+  mainWindow?.setTitle(nativeText('windowTitle', language));
   if (!tray) return;
   tray.setToolTip(nativeText('windowTitle', language));
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -495,13 +511,18 @@ function updateTray(language: OverlaySettings['language']): void {
     { type: 'separator' },
     { label: nativeText('quit', language), click: () => app.quit() },
   ]));
-  mainWindow?.setTitle(nativeText('windowTitle', language));
 }
 
 function createTray(language: OverlaySettings['language']): void {
+  if (tray) return;
   tray = new Tray(nativeImage.createFromPath(appIconPath).resize({ width: 32, height: 32 }));
   updateTray(language);
   tray.on('click', () => { void showMainWindow(); });
+}
+
+function destroyTray(): void {
+  tray?.destroy();
+  tray = null;
 }
 
 function currentUpdateLanguage(fallback: OverlaySettings['language'] = 'fr'): OverlaySettings['language'] {
@@ -720,8 +741,9 @@ app.whenReady().then(async () => {
     settingsPath: join(app.getPath('userData'), 'overlay-settings.json'),
   });
   startNativeAudioCapture(overlayService.settings().audioOutputDeviceId);
-  await createWindow({ showOnReady: !overlayService.settings().startHidden });
-  createTray(overlayService.settings().language);
+  const startHidden = overlayService.settings().startHidden;
+  await createWindow({ showOnReady: !startHidden });
+  if (startHidden) createTray(overlayService.settings().language);
   await showChangelogAfterUpdate().catch((error: unknown) => {
     console.warn('Le journal des modifications n’a pas pu être affiché après la mise à jour :', error);
   });
@@ -748,6 +770,17 @@ app.on('before-quit', (event) => {
   if (isQuitting || !overlayService) return;
   isQuitting = true;
   event.preventDefault();
+  tray?.destroy();
+  tray = null;
+  BrowserWindow.getAllWindows().forEach((window) => window.destroy());
   stopNativeAudioCapture();
-  overlayService.close().finally(() => app.exit(0));
+  const shutdownTimer = setTimeout(() => app.exit(0), UPDATE_SHUTDOWN_TIMEOUT_MS);
+  overlayService.close()
+    .catch((error: unknown) => {
+      console.warn('Le service local n’a pas pu être arrêté proprement :', error);
+    })
+    .finally(() => {
+      clearTimeout(shutdownTimer);
+      app.exit(0);
+    });
 });
