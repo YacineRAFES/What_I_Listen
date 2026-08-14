@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.7.0...v0.8.0) (2026-08-14)
+
+### Features
+
+* ajoute le mix de thèmes aléatoires ([b6e70be](https://github.com/YacineRAFES/What_I_Listen/commit/b6e70be092b46cef03fa7df995ca620c7747c823))
+
+### Bug Fixes
+
+* utiliser la pochette fournie par Windows ([ad6b95f](https://github.com/YacineRAFES/What_I_Listen/commit/ad6b95f69c78b0aba63a5e95fd2dc7c565140d20))
+
 ## [0.7.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.6.1...v0.7.0) (2026-08-14)
 
 ### Features
