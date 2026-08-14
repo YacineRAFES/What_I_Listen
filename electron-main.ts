@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, net, Tray, type BrowserWindow as ElectronBrowserWindow, type Tray as ElectronTray } from 'electron';
 import electronUpdater from 'electron-updater';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { startOverlayService, type OverlayService } from './src/overlay-service.js';
@@ -14,6 +14,7 @@ const appIconPath = join(projectDirectory, 'public', 'app-icon.ico');
 const appUserModelId = 'fr.whatilisten.deezer';
 const githubRepository = 'YacineRAFES/What_I_Listen';
 const githubReleasesUrl = `https://api.github.com/repos/${githubRepository}/releases`;
+const versionStateFileName = 'app-version.json';
 
 let mainWindow: ElectronBrowserWindow | null = null;
 let previewWindow: ElectronBrowserWindow | null = null;
@@ -319,6 +320,34 @@ async function showChangelogWindow(): Promise<void> {
   window.on('closed', () => { changelogWindow = null; });
   lockWindowToOverlay(window, overlayService.url);
   await window.loadURL(`${overlayService.url}changelog`);
+}
+
+async function showChangelogAfterUpdate(): Promise<void> {
+  const currentVersion = releaseVersion(app.getVersion());
+  if (!currentVersion) return;
+
+  const statePath = join(app.getPath('userData'), versionStateFileName);
+  let previousVersion: string | null = null;
+  try {
+    const state = asRecord(JSON.parse(await readFile(statePath, 'utf8')) as unknown);
+    previousVersion = releaseVersion(state?.version);
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.warn('L’état de version précédent a été ignoré :', error);
+    }
+  }
+
+  try {
+    await writeFile(statePath, `${JSON.stringify({ version: currentVersion }, null, 2)}\n`, 'utf8');
+  } catch (error: unknown) {
+    console.warn('La version actuelle n’a pas pu être mémorisée :', error);
+  }
+
+  // L'absence d'état correspond à une première installation. La fenêtre ne
+  // s'ouvre qu'après le passage effectif d'une version installée à une autre.
+  if (previousVersion && compareVersions(currentVersion, previousVersion) > 0) {
+    await showChangelogWindow();
+  }
 }
 
 function nativeCapturePath(): string {
@@ -693,6 +722,9 @@ app.whenReady().then(async () => {
   startNativeAudioCapture(overlayService.settings().audioOutputDeviceId);
   await createWindow({ showOnReady: !overlayService.settings().startHidden });
   createTray(overlayService.settings().language);
+  await showChangelogAfterUpdate().catch((error: unknown) => {
+    console.warn('Le journal des modifications n’a pas pu être affiché après la mise à jour :', error);
+  });
   startAutomaticUpdates(overlayService.settings().language);
   let audioOutputDeviceId = overlayService.settings().audioOutputDeviceId;
   overlayService.onSettingsChanged((settings) => {
