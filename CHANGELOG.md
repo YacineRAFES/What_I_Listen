@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.6.1...v0.7.0) (2026-08-14)
+
+### Features
+
+* ajoute les visualisations audio et MilkDrop ([313d253](https://github.com/YacineRAFES/What_I_Listen/commit/313d2531f65b650bcef355ece0805a647cab1fce))
+
 ## [0.6.1](https://github.com/YacineRAFES/What_I_Listen/compare/v0.6.0...v0.6.1) (2026-08-13)
 
 ### Bug Fixes
