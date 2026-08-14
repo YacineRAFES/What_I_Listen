@@ -62,9 +62,6 @@ const randomSkinMinDelayMs = 15_000;
 const randomSkinMaxDelayMs = 45_000;
 const audioBandCount = 64;
 const audioGroupCount = 6;
-const coverRefreshDelayMs = 5000;
-const deezerSearchUrl = 'https://api.deezer.com/search/track';
-const deezerRequestTimeoutMs = 6000;
 const maxCoverBytes = 5 * 1024 * 1024;
 const maxCoverBase64Length = Math.ceil(maxCoverBytes * 4 / 3);
 const maxAudioSubscribers = 8;
@@ -128,13 +125,6 @@ interface ServiceState extends OverlaySettings {
 
 type SettingsUpdate = Partial<OverlaySettings>;
 
-interface DeezerTrackResult {
-  title: string;
-  artist: string;
-  album: string;
-  coverUrl: string;
-}
-
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -163,60 +153,6 @@ function requestHeader(request: IncomingMessage, name: string): string {
 function escapeXml(value: string): string {
   const entities: Record<string, string> = { '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' };
   return value.replace(/[<>&'"]/g, (character) => entities[character] ?? character);
-}
-
-function normalizeMediaText(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLocaleLowerCase('fr')
-    .replace(/[^\p{Letter}\p{Number}]+/gu, ' ')
-    .trim();
-}
-
-function recordValue(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
-function stringValue(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function parseDeezerResults(value: unknown): DeezerTrackResult[] {
-  const payload = recordValue(value);
-  if (!payload || !Array.isArray(payload.data)) return [];
-
-  return payload.data.flatMap((candidate) => {
-    const track = recordValue(candidate);
-    if (!track) return [];
-    const artist = stringValue(recordValue(track.artist)?.name);
-    const album = recordValue(track.album);
-    const coverUrl = stringValue(album?.cover_xl)
-      || stringValue(album?.cover_big)
-      || stringValue(album?.cover_medium);
-    const title = stringValue(track.title);
-    if (!title || !artist || !coverUrl || !coverUrl.startsWith('https://')) return [];
-    return [{ title, artist, album: stringValue(album?.title), coverUrl }];
-  });
-}
-
-function deezerMatchScore(track: DeezerTrackResult, title: string, artist: string, album: string): number {
-  const expectedTitle = normalizeMediaText(title);
-  const expectedArtist = normalizeMediaText(artist);
-  const expectedAlbum = normalizeMediaText(album);
-  const actualTitle = normalizeMediaText(track.title);
-  const actualArtist = normalizeMediaText(track.artist);
-  const actualAlbum = normalizeMediaText(track.album);
-
-  let score = 0;
-  if (actualTitle === expectedTitle) score += 6;
-  else if (actualTitle.includes(expectedTitle) || expectedTitle.includes(actualTitle)) score += 4;
-  if (actualArtist === expectedArtist) score += 6;
-  else if (actualArtist.includes(expectedArtist) || expectedArtist.includes(actualArtist)) score += 4;
-  if (expectedAlbum && actualAlbum === expectedAlbum) score += 2;
-  return score;
 }
 
 function normalizeSkin(value: unknown): OverlaySkin {
@@ -362,13 +298,8 @@ export async function startOverlayService({
   const audioSubscribers = new Set<ServerResponse>();
   let stopListening = () => {};
   let isListening = false;
-  let trackKey = '';
   let randomTrackKey = '';
   let randomSkinTimer: ReturnType<typeof setTimeout> | undefined;
-  let thumbnailAwaitingRefresh = false;
-  let deezerCoverTrackKey = '';
-  const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
-  const deezerLookupTrackKeys = new Set<string>();
   const settingsListeners = new Set<(settings: OverlaySettings) => void>();
 
   function applyRandomVisualSkin(): void {
@@ -394,63 +325,6 @@ export async function startOverlayService({
       applyRandomVisualSkin();
       syncRandomSkinTimer();
     }, delay);
-  }
-
-  async function findDeezerCover(title: string, artist: string, album: string): Promise<string> {
-    const searchUrl = new URL(deezerSearchUrl);
-    searchUrl.searchParams.set('q', `artist:"${artist}" track:"${title}"`);
-    searchUrl.searchParams.set('limit', '5');
-
-    const searchResponse = await fetch(searchUrl, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(deezerRequestTimeoutMs),
-    });
-    if (!searchResponse.ok) throw new Error(`Recherche Deezer indisponible (${searchResponse.status}).`);
-
-    const candidates = parseDeezerResults(await searchResponse.json())
-      .map((track) => ({ track, score: deezerMatchScore(track, title, artist, album) }))
-      .filter(({ score }) => score >= 8)
-      .sort((left, right) => right.score - left.score);
-    const match = candidates[0]?.track;
-    if (!match) return '';
-
-    const coverResponse = await fetch(match.coverUrl, {
-      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg;q=0.9,*/*;q=0.1' },
-      signal: AbortSignal.timeout(deezerRequestTimeoutMs),
-    });
-    if (!coverResponse.ok) throw new Error(`Pochette Deezer indisponible (${coverResponse.status}).`);
-
-    const contentType = coverResponse.headers.get('content-type')?.split(';', 1)[0]?.toLowerCase() ?? '';
-    if (!/^image\/(avif|jpeg|png|webp)$/.test(contentType)) throw new Error('Format de pochette Deezer non pris en charge.');
-    const image = Buffer.from(await coverResponse.arrayBuffer());
-    if (!image.length || image.length > maxCoverBytes) throw new Error('Taille de pochette Deezer invalide.');
-    return `data:${contentType};base64,${image.toString('base64')}`;
-  }
-
-  function requestDeezerCoverFallback(expectedTrackKey: string): void {
-    if (deezerLookupTrackKeys.has(expectedTrackKey) || !state.title || !state.artist) return;
-    deezerLookupTrackKeys.add(expectedTrackKey);
-
-    const { title, artist, album } = state;
-    void findDeezerCover(title, artist, album)
-      .then((thumbnail) => {
-        if (!thumbnail || trackKey !== expectedTrackKey || !thumbnailAwaitingRefresh) return;
-        state.thumbnail = thumbnail;
-        thumbnailAwaitingRefresh = false;
-        deezerCoverTrackKey = expectedTrackKey;
-        state.version += 1;
-      })
-      .catch((error: unknown) => console.warn(`Pochette Deezer ignorée : ${errorMessage(error)}`));
-  }
-
-  function refreshMetadataAfterTrackChange(expectedTrackKey: string): void {
-    for (const delay of [coverRefreshDelayMs]) {
-      const timer = setTimeout(() => {
-        pendingMetadataRefreshes.delete(timer);
-        if (trackKey === expectedTrackKey && thumbnailAwaitingRefresh) requestDeezerCoverFallback(expectedTrackKey);
-      }, delay);
-      pendingMetadataRefreshes.add(timer);
-    }
   }
 
   function matchesConfiguredApp(session: import('windows-media-sessions').MediaSession): boolean {
@@ -497,26 +371,7 @@ export async function startOverlayService({
           error: '',
         };
 
-    const nextTrackKey = [next.source, next.title, next.artist, next.album].join('\u001f');
-    const trackChanged = nextTrackKey !== trackKey;
     const nextRandomTrackKey = [next.source, next.title, next.artist].join('\u001f');
-    // Deezer publie parfois une miniature avec une piste de retard. Après un
-    // changement de titre, la pochette Windows est donc ignorée : le secours
-    // Deezer, déclenché cinq secondes plus tard, fournit l'image associée au
-    // titre courant.
-    if (trackChanged) {
-      trackKey = nextTrackKey;
-      deezerCoverTrackKey = '';
-      thumbnailAwaitingRefresh = next.available;
-      if (thumbnailAwaitingRefresh) {
-        next.thumbnail = '';
-        refreshMetadataAfterTrackChange(nextTrackKey);
-      }
-    } else if (thumbnailAwaitingRefresh) {
-      next.thumbnail = '';
-    } else if (deezerCoverTrackKey === trackKey) {
-      next.thumbnail = state.thumbnail;
-    }
 
     const changed = (['available', 'title', 'artist', 'album', 'playback', 'source', 'thumbnail'] as const)
       .some((key) => state[key] !== next[key]);
@@ -887,8 +742,6 @@ export async function startOverlayService({
     async close() {
       stopListening();
       clearRandomSkinTimer();
-      for (const timer of pendingMetadataRefreshes) clearTimeout(timer);
-      pendingMetadataRefreshes.clear();
       for (const response of audioSubscribers) response.end();
       audioSubscribers.clear();
       if (isListening) {

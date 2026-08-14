@@ -1,6 +1,6 @@
 # What I Listen — Deezer
 
-Application Windows qui affiche le morceau Deezer en cours, puis fournit un overlay pour OBS. Elle lit la session média publiée par Windows. Si Windows conserve une jaquette en retard, l’application recherche une seule fois la piste dans le catalogue public Deezer, avec son titre et son artiste, afin d’afficher la bonne image. Cette recherche ne se connecte pas au compte Deezer et ne lit aucun fichier audio.
+Application Windows qui affiche le morceau Deezer en cours, puis fournit un overlay pour OBS. Elle lit le titre, l’artiste et la pochette directement depuis la session média publiée par Windows, sans appeler l’API Deezer et sans lire aucun fichier audio.
 
 Distribué sous licence [MIT](LICENSE).
 
