@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.1](https://github.com/YacineRAFES/What_I_Listen/compare/v0.10.0...v0.10.1) (2026-08-14)
+
+### Bug Fixes
+
+* restaurer la publication des changelogs ([4b9ec97](https://github.com/YacineRAFES/What_I_Listen/commit/4b9ec9702c50e1dd9fdc80493f017d6288467984))
+
 ## [0.10.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.9.0...v0.10.0) (2026-08-14)
 
 ### Features
