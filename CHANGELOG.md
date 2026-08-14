@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.9.0...v0.10.0) (2026-08-14)
+
+### Features
+
+* afficher le changelog après une mise à jour ([b13db32](https://github.com/YacineRAFES/What_I_Listen/commit/b13db3206468a884bb8a618ec8f7d875bd34471e))
+
+### Bug Fixes
+
+* corriger la réduction et la fermeture de l'application ([6c4a071](https://github.com/YacineRAFES/What_I_Listen/commit/6c4a071f2d55aba1a14b73663ab70b08bd9271df))
+* ignorer les sessions multimédias hors Deezer ([27615a0](https://github.com/YacineRAFES/What_I_Listen/commit/27615a020531e4e1e3cef94b53d769929ce20d5e))
+
 ## [0.9.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.8.0...v0.9.0) (2026-08-14)
 
 ### Features
