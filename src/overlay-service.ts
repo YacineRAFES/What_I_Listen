@@ -62,6 +62,7 @@ const randomSkinMinDelayMs = 15_000;
 const randomSkinMaxDelayMs = 45_000;
 const audioBandCount = 64;
 const audioGroupCount = 6;
+const windowsCoverRefreshDelaysMs = [1000, 3500] as const;
 const maxCoverBytes = 5 * 1024 * 1024;
 const maxCoverBase64Length = Math.ceil(maxCoverBytes * 4 / 3);
 const maxAudioSubscribers = 8;
@@ -298,9 +299,15 @@ export async function startOverlayService({
   const audioSubscribers = new Set<ServerResponse>();
   let stopListening = () => {};
   let isListening = false;
+  let trackKey = '';
+  let correctedCoverTrackKey = '';
+  let correctedCoverThumbnail = '';
   let randomTrackKey = '';
   let randomSkinTimer: ReturnType<typeof setTimeout> | undefined;
+  const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
+  const activeMetadataRefreshManagers = new Set<ReturnType<typeof createSessionManager>>();
   const settingsListeners = new Set<(settings: OverlaySettings) => void>();
+  let closing = false;
 
   function applyRandomVisualSkin(): void {
     state.effectiveSkin = chooseRandomVisualSkin(state.effectiveSkin);
@@ -327,6 +334,35 @@ export async function startOverlayService({
     }, delay);
   }
 
+  async function reloadWindowsMetadata(expectedTrackKey: string): Promise<void> {
+    if (closing || trackKey !== expectedTrackKey) return;
+    // Le backend 1.0.3 mémorise parfois l'ancienne miniature avec le nouveau
+    // titre. Une instance éphémère repart avec un cache vide et relit donc le
+    // flux de pochette directement depuis la session Windows.
+    const refreshManager = createSessionManager(backendPath ? { backendPath } : undefined);
+    activeMetadataRefreshManagers.add(refreshManager);
+    try {
+      const sessions = await refreshManager.getAllSessions();
+      if (!closing && trackKey === expectedTrackKey) updateState(sessions, 'fresh');
+    } catch (error) {
+      if (!closing) console.warn(`Actualisation de la pochette Windows ignorée : ${errorMessage(error)}`);
+    } finally {
+      if (activeMetadataRefreshManagers.delete(refreshManager)) await refreshManager.stop();
+    }
+  }
+
+  function refreshWindowsMetadataAfterTrackChange(expectedTrackKey: string, staleThumbnail: string): void {
+    for (const delay of windowsCoverRefreshDelaysMs) {
+      const timer = setTimeout(() => {
+        pendingMetadataRefreshes.delete(timer);
+        if (trackKey === expectedTrackKey && state.thumbnail === staleThumbnail) {
+          void reloadWindowsMetadata(expectedTrackKey);
+        }
+      }, delay);
+      pendingMetadataRefreshes.add(timer);
+    }
+  }
+
   function matchesConfiguredApp(session: import('windows-media-sessions').MediaSession): boolean {
     const appId = String(session.sourceAppUserModelId ?? '').toLowerCase();
     const appName = String(session.sourceAppDisplayName ?? '').toLowerCase();
@@ -347,7 +383,10 @@ export async function startOverlayService({
       ?? null;
   }
 
-  function updateState(sessions: import('windows-media-sessions').MediaSession[]): void {
+  function updateState(
+    sessions: import('windows-media-sessions').MediaSession[],
+    metadataSource: 'primary' | 'fresh' = 'primary',
+  ): void {
     const session = chooseSession(sessions);
     const next = session
       ? {
@@ -371,7 +410,24 @@ export async function startOverlayService({
           error: '',
         };
 
+    const nextTrackKey = [next.source, next.title, next.artist, next.album].join('\u001f');
+    const trackChanged = nextTrackKey !== trackKey;
     const nextRandomTrackKey = [next.source, next.title, next.artist].join('\u001f');
+    if (trackChanged) {
+      const hadPreviousTrack = Boolean(trackKey && state.available);
+      trackKey = nextTrackKey;
+      correctedCoverTrackKey = '';
+      correctedCoverThumbnail = '';
+      if (hadPreviousTrack && next.available && (!next.thumbnail || next.thumbnail === state.thumbnail)) {
+        refreshWindowsMetadataAfterTrackChange(nextTrackKey, next.thumbnail);
+      }
+    }
+    if (metadataSource === 'fresh' && nextTrackKey === trackKey && next.thumbnail) {
+      correctedCoverTrackKey = nextTrackKey;
+      correctedCoverThumbnail = next.thumbnail;
+    } else if (metadataSource === 'primary' && correctedCoverTrackKey === nextTrackKey) {
+      next.thumbnail = correctedCoverThumbnail;
+    }
 
     const changed = (['available', 'title', 'artist', 'album', 'playback', 'source', 'thumbnail'] as const)
       .some((key) => state[key] !== next[key]);
@@ -740,8 +796,14 @@ export async function startOverlayService({
       return () => settingsListeners.delete(listener);
     },
     async close() {
+      closing = true;
       stopListening();
       clearRandomSkinTimer();
+      for (const timer of pendingMetadataRefreshes) clearTimeout(timer);
+      pendingMetadataRefreshes.clear();
+      const refreshManagers = [...activeMetadataRefreshManagers];
+      activeMetadataRefreshManagers.clear();
+      await Promise.allSettled(refreshManagers.map((refreshManager) => refreshManager.stop()));
       for (const response of audioSubscribers) response.end();
       audioSubscribers.clear();
       if (isListening) {

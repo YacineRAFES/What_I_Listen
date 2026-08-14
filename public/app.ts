@@ -49,10 +49,11 @@ function renderServiceError(message: string) {
 function refreshCover(data: NowPlayingData) {
   if (!data.coverUrl || data.coverUrl === previousCoverUrl) return;
   previousCoverUrl = data.coverUrl;
-  cover.removeAttribute('src');
-  window.requestAnimationFrame(() => {
+  const nextCover = new Image();
+  nextCover.addEventListener('load', () => {
     if (data.coverUrl === previousCoverUrl) cover.src = data.coverUrl;
-  });
+  }, { once: true });
+  nextCover.src = data.coverUrl;
 }
 
 function resizeHomePreview() {
