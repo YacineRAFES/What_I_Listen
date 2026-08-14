@@ -7,6 +7,7 @@ const { join, resolve } = require('node:path');
 const temporaryDirectory = mkdtempSync(join(tmpdir(), 'wil-webgl-'));
 const targetUrl = process.argv[2] || '';
 const entryPoint = resolve(process.cwd(), 'public', 'reactive-webgl.ts');
+const milkDropEntryPoint = resolve(process.cwd(), 'public', 'milkdrop.ts');
 const scriptPath = join(temporaryDirectory, 'smoke.js');
 const pagePath = join(temporaryDirectory, 'index.html');
 
@@ -18,16 +19,33 @@ buildSync({
   stdin: {
     contents: `
       import { ReactiveWebGLVisualizer } from ${JSON.stringify(entryPoint)};
-      const canvas = document.querySelector('canvas');
+      import { MilkDropVisualizer } from ${JSON.stringify(milkDropEntryPoint)};
+      const [canvas, milkDropCanvas] = document.querySelectorAll('canvas');
       const visualizer = new ReactiveWebGLVisualizer(canvas);
       visualizer.resize(520, 130);
-      const bands = Array.from({ length: 16 }, (_, index) => .15 + (index % 5) * .12);
-      const modes = ['tunnel', 'particles', 'kaleidoscope'];
-      const rendered = modes.every((mode, index) => visualizer.render(mode, index + .5, .64, bands));
+      const bands = Array.from({ length: 64 }, (_, index) => .15 + (index % 5) * .12);
+      const groups = [.42, .64, .37, .51, .46, .32];
+      const modes = ['tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback'];
+      const rendered = modes.every((mode, index) => visualizer.render(mode, index + .5, .64, bands, groups));
       const gl = canvas.getContext('webgl2');
+      const milkDrop = new MilkDropVisualizer(milkDropCanvas);
+      milkDrop.resize(520, 130);
+      const waveform = new Uint8Array(1024);
+      waveform.forEach((_, index) => { waveform[index] = Math.round(128 + Math.sin(index * .12) * 92); });
+      milkDrop.updateWaveform(btoa(String.fromCharCode(...waveform)));
+      const themes = ['milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid'];
+      let milkDropRendered = true;
+      for (const theme of themes) {
+        for (let frame = 0; frame < 8; frame += 1) {
+          milkDropRendered = milkDrop.render(theme, 1 / 30) && milkDropRendered;
+          await new Promise((resolve) => setTimeout(resolve, 8));
+        }
+      }
       window.webglSmoke = {
         available: visualizer.available,
         height: canvas.height,
+        milkDropAvailable: milkDrop.available,
+        milkDropRendered,
         rendered,
         renderer: gl?.getParameter(gl.RENDERER) || '',
         width: canvas.width,
@@ -40,7 +58,7 @@ buildSync({
   target: ['chrome140'],
 });
 
-writeFileSync(pagePath, '<!doctype html><meta charset="utf-8"><canvas></canvas><script type="module" src="./smoke.js"></script>');
+writeFileSync(pagePath, '<!doctype html><meta charset="utf-8"><canvas></canvas><canvas></canvas><script type="module" src="./smoke.js"></script>');
 
 app.setPath('userData', join(temporaryDirectory, 'profile'));
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
@@ -62,7 +80,7 @@ app.whenReady().then(async () => {
     width: 520,
   });
   window.webContents.on('console-message', (event) => {
-    if (event.level === 'error') console.error(`Renderer: ${event.message}`);
+    if (event.level === 'error' || /MilkDrop|GLSL|WebGL/i.test(event.message)) console.error(`Renderer: ${event.message}`);
   });
 
   try {
@@ -102,7 +120,8 @@ app.whenReady().then(async () => {
     console.log(JSON.stringify(result));
     const fallbackFailed = result?.contextLossSupported && !result.fallbackAfterContextLoss;
     const titleWidthFailed = targetUrl && result.titleWidth < 340;
-    const failed = !result?.webgl2 || !result.available || !result.rendered || fallbackFailed || titleWidthFailed || result.width < 100 || result.height < 50;
+    const milkDropFailed = !targetUrl && (!result?.milkDropAvailable || !result.milkDropRendered);
+    const failed = !result?.webgl2 || !result.available || !result.rendered || milkDropFailed || fallbackFailed || titleWidthFailed || result.width < 100 || result.height < 50;
     clearTimeout(timeout);
     window.destroy();
     app.exit(failed ? 1 : 0);

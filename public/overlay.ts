@@ -1,4 +1,5 @@
 import { ReactiveWebGLVisualizer, type ReactiveWebGLMode } from './reactive-webgl.js';
+import { MilkDropVisualizer, type MilkDropTheme } from './milkdrop.js';
 
 const card = document.querySelector<HTMLElement>('#now-playing')!;
 const overlayContent = document.querySelector<HTMLElement>('.overlay-content')!;
@@ -16,8 +17,10 @@ const meterBars = [...document.querySelectorAll<HTMLElement>('.visual-meter i')]
 const oscilloscopeTrace = document.querySelector<SVGPathElement>('#oscilloscope-trace')!;
 const reactiveCanvas = document.querySelector<HTMLCanvasElement>('#reactive-canvas')!;
 const reactiveWebGLCanvas = document.querySelector<HTMLCanvasElement>('#reactive-webgl')!;
+const milkDropCanvas = document.querySelector<HTMLCanvasElement>('#milkdrop-canvas')!;
 const reactiveContext = reactiveCanvas.getContext('2d', { alpha: true })!;
 const reactiveWebGL = new ReactiveWebGLVisualizer(reactiveWebGLCanvas);
+const milkDropVisualizer = new MilkDropVisualizer(milkDropCanvas);
 const spectrumSourceBandCount = spectrumBars.length / 2;
 const spectrumPeaks = Array(spectrumBars.length).fill(.08);
 const spectrumLevels = Array(spectrumBars.length).fill(.06);
@@ -26,8 +29,10 @@ const meterLevels = Array(meterBars.length).fill(.04);
 const oscilloscopePointCount = 33;
 const oscilloscopeLevels = Array(oscilloscopePointCount).fill(0);
 let oscilloscopePhase = 0;
-const reactiveBands = Array(16).fill(0);
-const reactiveTargets = Array(16).fill(0);
+const reactiveBands = Array(64).fill(0);
+const reactiveTargets = Array(64).fill(0);
+const reactiveGroups = Array(6).fill(0);
+const reactiveGroupTargets = Array(6).fill(0);
 let reactiveLevel = 0;
 let reactiveTargetLevel = 0;
 let reactiveFrame = 0;
@@ -47,7 +52,7 @@ interface ReactiveParticle {
 
 const reactiveParticles: ReactiveParticle[] = Array.from({ length: 58 }, (_, index) => ({
   angle: (index / 58) * Math.PI * 2,
-  band: index % 16,
+  band: index % 64,
   distance: .12 + ((index * 37) % 83) / 100,
   phase: ((index * 53) % 101) / 101 * Math.PI * 2,
   size: .65 + ((index * 29) % 17) / 10,
@@ -74,9 +79,13 @@ function applyAudioLevels(audio?: AudioLevels) {
   const intensity = Math.max(0.06, Math.pow(level, 0.66));
 
   reactiveTargetLevel = level;
+  milkDropVisualizer.updateWaveform(liveAudio?.waveform);
   reactiveTargets.forEach((_, index) => {
     const position = Math.round((index / Math.max(1, reactiveTargets.length - 1)) * Math.max(0, bands.length - 1));
     reactiveTargets[index] = Math.max(0, Math.min(1, Number(bands[position]) || 0));
+  });
+  reactiveGroupTargets.forEach((_, index) => {
+    reactiveGroupTargets[index] = Math.max(0, Math.min(1, Number(liveAudio?.groups?.[index]) || 0));
   });
 
   bars.forEach((bar, index) => {
@@ -85,8 +94,8 @@ function applyAudioLevels(audio?: AudioLevels) {
     bar.style.setProperty('--bar-level', String(Math.min(1, Math.pow(band, 0.72) * 1.15)));
   });
   spectrumBars.forEach((bar, index) => {
-    // Les 16 mesures sont affichées de 16 à 1 puis de 1 à 16 afin de former
-    // un spectrum symétrique de 32 bandes, centré sur les basses fréquences.
+    // Le rendu prélève 16 positions dans les 64 mesures, puis les affiche de
+    // 16 à 1 et de 1 à 16 : 32 colonnes symétriques centrées sur les basses.
     const sourceIndex = index < spectrumSourceBandCount
       ? spectrumSourceBandCount - 1 - index
       : index - spectrumSourceBandCount;
@@ -168,6 +177,7 @@ function resizeReactiveCanvas() {
   reactiveCanvas.height = height;
   reactiveContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
   reactiveWebGL.resize(reactiveWidth, reactiveHeight);
+  milkDropVisualizer.resize(reactiveWidth, reactiveHeight);
 }
 
 function drawTunnel(time: number) {
@@ -259,7 +269,7 @@ function drawKaleidoscope(time: number) {
       context.lineTo(radius, wave);
     });
     context.strokeStyle = `hsla(${(time * 52 + arm * 36) % 360}, 100%, 65%, ${.16 + reactiveLevel * .42})`;
-    context.lineWidth = 1 + reactiveBands[arm % 16] * 3;
+    context.lineWidth = 1 + reactiveBands[arm % reactiveBands.length] * 3;
     context.shadowBlur = 7 + reactiveLevel * 16;
     context.shadowColor = `hsl(${(time * 52 + arm * 36) % 360}, 100%, 58%)`;
     context.stroke();
@@ -273,12 +283,12 @@ function drawKaleidoscope(time: number) {
       else context.lineTo(radius, wave);
     }
     context.strokeStyle = `hsla(${(time * 41 + arm * 36 + 120) % 360}, 100%, 72%, ${.08 + reactiveLevel * .25})`;
-    context.lineWidth = .55 + reactiveBands[(arm + 5) % 16] * 1.8;
+    context.lineWidth = .55 + reactiveBands[(arm + 5) % reactiveBands.length] * 1.8;
     context.stroke();
     context.restore();
   }
   for (let ring = 0; ring < 8; ring += 1) {
-    const band = reactiveBands[(ring * 2) % 16];
+    const band = reactiveBands[(ring * 2) % reactiveBands.length];
     const radius = 10 + ring * 15 + band * 25;
     context.beginPath();
     context.arc(0, 0, radius, 0, Math.PI * 2);
@@ -295,12 +305,16 @@ function animateReactiveCanvas(timestamp: number) {
   const elapsed = Math.min(.1, Math.max(0, timestamp - reactiveLastFrame) / 1000);
   reactiveLastFrame = timestamp;
   const mode = card.dataset.visualizer;
-  if (document.hidden || !card.classList.contains('visible') || !['tunnel', 'particles', 'kaleidoscope'].includes(mode || '')) return;
+  if (document.hidden || !card.classList.contains('visible') || !['tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop'].includes(mode || '')) return;
 
   resizeReactiveCanvas();
   reactiveBands.forEach((value, index) => {
     const target = reactiveTargets[index];
     reactiveBands[index] = value + (target - value) * (target > value ? .34 : .12);
+  });
+  reactiveGroups.forEach((value, index) => {
+    const target = reactiveGroupTargets[index];
+    reactiveGroups[index] = value + (target - value) * (target > value ? .38 : .11);
   });
   reactiveLevel += (reactiveTargetLevel - reactiveLevel) * (reactiveTargetLevel > reactiveLevel ? .3 : .1);
   const bandEnergy = reactiveBands.reduce((peak, band) => Math.max(peak, band), 0);
@@ -308,12 +322,19 @@ function animateReactiveCanvas(timestamp: number) {
   if (motion > .003) reactiveTime += elapsed * (.22 + motion * 2.6);
   reactiveContext.clearRect(0, 0, reactiveWidth, reactiveHeight);
   const time = reactiveTime;
-  const webGLRendered = reactiveWebGL.render(mode as ReactiveWebGLMode, time, reactiveLevel, reactiveBands);
+  if (mode === 'milkdrop') {
+    const rendered = milkDropVisualizer.render(card.dataset.skin as MilkDropTheme, Math.max(1 / 60, elapsed));
+    card.classList.toggle('milkdrop-fallback', !rendered);
+    if (!rendered) drawKaleidoscope(time);
+    return;
+  }
+  const webGLRendered = reactiveWebGL.render(mode as ReactiveWebGLMode, time, reactiveLevel, reactiveBands, reactiveGroups);
   card.classList.toggle('webgl-fallback', !webGLRendered);
   if (webGLRendered) return;
   if (mode === 'tunnel') drawTunnel(time);
   if (mode === 'particles') drawParticles(time);
   if (mode === 'kaleidoscope') drawKaleidoscope(time);
+  if (['spiral', 'plasma', 'fractal', 'fluid', 'feedback'].includes(mode || '')) drawKaleidoscope(time);
 }
 
 function flattenAudioLevels() {
@@ -323,6 +344,7 @@ function flattenAudioLevels() {
   meterPeaks.fill(0);
   oscilloscopeLevels.fill(0);
   reactiveTargets.fill(0);
+  reactiveGroupTargets.fill(0);
   reactiveTargetLevel = 0;
   applyAudioLevels();
 }
@@ -421,6 +443,7 @@ card.classList.toggle('webgl-fallback', !reactiveWebGL.available);
 window.addEventListener('pagehide', () => {
   window.cancelAnimationFrame(reactiveFrame);
   reactiveWebGL.dispose();
+  milkDropVisualizer.dispose();
 }, { once: true });
 
 function refreshCover(data: NowPlayingData) {

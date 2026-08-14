@@ -20,6 +20,8 @@
     "node": ">=20.19.0"
   },
   "dependencies": {
+    "butterchurn": "^2.6.7",
+    "butterchurn-presets": "^2.4.7",
     "electron-updater": "^6.6.2",
     "three": "^0.185.1",
     "windows-media-sessions": "1.0.3"

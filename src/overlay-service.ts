@@ -6,7 +6,7 @@ import { createSessionManager } from 'windows-media-sessions';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
-const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'kaleidoscope']);
+const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid']);
 const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const spectrumPalettes = new Set(['modern', 'ocean-mist', 'fire-storm', 'scope']);
 const supportedLanguages = new Set(['fr', 'en']);
@@ -33,9 +33,19 @@ const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.
   oscilloscope: 'oscilloscope',
   tunnel: 'tunnel',
   particles: 'particles',
+  spiral: 'spiral',
+  plasma: 'plasma',
   kaleidoscope: 'kaleidoscope',
+  fractal: 'fractal',
+  fluid: 'fluid',
+  feedback: 'feedback',
+  'milkdrop-spiral': 'milkdrop',
+  'milkdrop-fractal': 'milkdrop',
+  'milkdrop-neon': 'milkdrop',
+  'milkdrop-liquid': 'milkdrop',
 });
-const audioBandCount = 16;
+const audioBandCount = 64;
+const audioGroupCount = 6;
 const coverRefreshDelayMs = 5000;
 const deezerSearchUrl = 'https://api.deezer.com/search/track';
 const deezerRequestTimeoutMs = 6000;
@@ -51,6 +61,12 @@ const securityHeaders = Object.freeze({
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'SAMEORIGIN',
   'X-DNS-Prefetch-Control': 'off',
+});
+const milkDropOverlayHeaders = Object.freeze({
+  'Content-Security-Policy': securityHeaders['Content-Security-Policy'].replace(
+    "script-src 'self'",
+    "script-src 'self' 'unsafe-eval'",
+  ),
 });
 
 export interface StartOverlayOptions {
@@ -219,12 +235,19 @@ function normalizeAudioLevels(value: unknown): AudioLevels | null {
     const level = Number(candidate.bands![index]);
     return Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0;
   });
+  const groups = Array.from({ length: audioGroupCount }, (_, index) => {
+    const group = Number(candidate.groups?.[index]);
+    return Number.isFinite(group) ? Math.min(1, Math.max(0, group)) : 0;
+  });
   const suppliedLevel = Number(candidate.level);
   const level = Number.isFinite(suppliedLevel)
     ? Math.min(1, Math.max(0, suppliedLevel))
     : bands.reduce((total, band) => total + band, 0) / bands.length;
 
-  return { bands, level };
+  const waveform = typeof candidate.waveform === 'string' && candidate.waveform.length <= 2048
+    && /^[A-Za-z0-9+/]*={0,2}$/.test(candidate.waveform) ? candidate.waveform : '';
+
+  return { bands, groups, level, waveform };
 }
 
 async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
@@ -299,7 +322,9 @@ export async function startOverlayService({
     audio: {
       active: false,
       bands: Array(audioBandCount).fill(0),
+      groups: Array(audioGroupCount).fill(0),
       level: 0,
+      waveform: '',
       updatedAt: 0,
       error: '',
     },
@@ -482,7 +507,9 @@ export async function startOverlayService({
     return {
       active: state.audio.active,
       bands: state.audio.bands,
+      groups: state.audio.groups,
       level: state.audio.level,
+      waveform: state.audio.waveform,
       updatedAt: state.audio.updatedAt,
       error: state.audio.error || undefined,
     };
@@ -526,7 +553,9 @@ export async function startOverlayService({
     state.audio.active = false;
     state.audio.error = String(error || 'La capture audio a été interrompue.').slice(0, 300);
     state.audio.bands = Array(audioBandCount).fill(0);
+    state.audio.groups = Array(audioGroupCount).fill(0);
     state.audio.level = 0;
+    state.audio.waveform = '';
     state.audio.updatedAt = Date.now();
     notifyAudioSubscribers();
   }
@@ -545,11 +574,18 @@ export async function startOverlayService({
 </svg>`;
   }
 
-  function send(response: ServerResponse, status: number, type: string, body: string | Buffer): void {
+  function send(
+    response: ServerResponse,
+    status: number,
+    type: string,
+    body: string | Buffer,
+    headers: Record<string, string> = {},
+  ): void {
     response.writeHead(status, {
       'Cache-Control': 'no-store',
       'Content-Type': type,
       ...securityHeaders,
+      ...headers,
     });
     response.end(body);
   }
@@ -563,9 +599,14 @@ export async function startOverlayService({
     send(response, 200, 'image/svg+xml; charset=utf-8', svgPlaceholder());
   }
 
-  async function sendStatic(response: ServerResponse, name: string, type: string): Promise<void> {
+  async function sendStatic(
+    response: ServerResponse,
+    name: string,
+    type: string,
+    headers: Record<string, string> = {},
+  ): Promise<void> {
     try {
-      send(response, 200, type, await readFile(join(publicDirectory, name)));
+      send(response, 200, type, await readFile(join(publicDirectory, name)), headers);
     } catch (error) {
       console.error(`Impossible de charger ${name}:`, errorMessage(error));
       send(response, 500, 'text/plain; charset=utf-8', 'Erreur interne.');
@@ -657,7 +698,7 @@ export async function startOverlayService({
     switch (url.pathname) {
       case '/':
       case '/index.html':
-        await sendStatic(response, 'index.html', 'text/html; charset=utf-8');
+        await sendStatic(response, 'index.html', 'text/html; charset=utf-8', milkDropOverlayHeaders);
         break;
       case '/overlay.css':
         await sendStatic(response, 'overlay.css', 'text/css; charset=utf-8');

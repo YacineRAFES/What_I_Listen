@@ -1,6 +1,8 @@
 interface AudioLevels {
   bands: number[];
+  groups: number[];
   level: number;
+  waveform: string;
 }
 
 interface AudioOutputDevice {
@@ -38,8 +40,8 @@ interface AutomaticUpdateState {
   error?: string;
 }
 
-type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'kaleidoscope';
-type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'kaleidoscope';
+type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'spiral' | 'plasma' | 'kaleidoscope' | 'fractal' | 'fluid' | 'feedback' | 'milkdrop';
+type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'spiral' | 'plasma' | 'kaleidoscope' | 'fractal' | 'fluid' | 'feedback' | 'milkdrop-spiral' | 'milkdrop-fractal' | 'milkdrop-neon' | 'milkdrop-liquid';
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
 type AppTheme = 'dark' | 'light';
@@ -118,4 +120,29 @@ declare module 'windows-media-sessions' {
   }
 
   export function createSessionManager(options?: { backendPath?: string }): SessionManager;
+}
+
+declare module 'butterchurn' {
+  interface ButterchurnAudioFrame {
+    timeByteArray: Uint8Array;
+    timeByteArrayL: Uint8Array;
+    timeByteArrayR: Uint8Array;
+  }
+
+  interface ButterchurnVisualizer {
+    loadPreset(preset: unknown, blendTime?: number): Promise<void> | void;
+    loseGLContext(): void;
+    render(options?: { audioLevels?: ButterchurnAudioFrame; elapsedTime?: number }): unknown;
+    setRendererSize(width: number, height: number, options?: Record<string, number | boolean>): void;
+  }
+
+  const butterchurn: {
+    createVisualizer(audioContext: BaseAudioContext | null, canvas: HTMLCanvasElement, options: Record<string, number | boolean>): ButterchurnVisualizer;
+  };
+  export default butterchurn;
+}
+
+declare module 'butterchurn-presets' {
+  const presets: { getPresets(): Record<string, unknown> };
+  export default presets;
 }

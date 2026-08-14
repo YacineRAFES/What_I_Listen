@@ -43,6 +43,7 @@
           <button class="style-filter" type="button" data-filter="modern" aria-pressed="false" data-i18n="styles.filter.modern">Moderne</button>
           <button class="style-filter" type="button" data-filter="retro" aria-pressed="false" data-i18n="styles.filter.retro">Rétro</button>
           <button class="style-filter" type="button" data-filter="minimal" aria-pressed="false" data-i18n="styles.filter.minimal">Minimal</button>
+          <button class="style-filter" type="button" data-filter="milkdrop" aria-pressed="false" data-i18n="styles.filter.milkdrop">MilkDrop</button>
         </div>
 
         <fieldset class="skin-options" data-i18n-aria-label="settings.skin.title" aria-label="Style de l’overlay">
@@ -72,6 +73,18 @@
             <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.tunnel">Tunnel hyperspace</strong><small data-i18n="settings.skin.tunnelDescription">Anneaux 3D et perspective pilotés par les basses.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
 
+          <label class="skin-option" data-skin-option="spiral" data-category="retro modern">
+            <input type="radio" name="skin" value="spiral">
+            <span class="skin-preview spiral-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.spiral">Spirale</strong><small data-i18n="settings.skin.spiralDescription">Bras lumineux et rotation modulée par l’audio.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="plasma" data-category="retro modern">
+            <input type="radio" name="skin" value="plasma">
+            <span class="skin-preview plasma-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.plasma">Plasma</strong><small data-i18n="settings.skin.plasmaDescription">Champ chromatique ondulant inspiré de MilkDrop.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
           <label class="skin-option" data-skin-option="particles" data-category="modern minimal">
             <input type="radio" name="skin" value="particles">
             <span class="skin-preview particles-preview" aria-hidden="true"><i></i><b></b><em></em></span>
@@ -82,6 +95,48 @@
             <input type="radio" name="skin" value="kaleidoscope">
             <span class="skin-preview kaleidoscope-preview" aria-hidden="true"><i></i><b></b><em></em></span>
             <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.kaleidoscope">Kaléidoscope</strong><small data-i18n="settings.skin.kaleidoscopeDescription">Rubans symétriques et couleurs psychédéliques.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="fractal" data-category="retro modern">
+            <input type="radio" name="skin" value="fractal">
+            <span class="skin-preview fractal-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.fractal">Fractal</strong><small data-i18n="settings.skin.fractalDescription">Formes fractales lumineuses et zoom musical.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="fluid" data-category="modern minimal">
+            <input type="radio" name="skin" value="fluid">
+            <span class="skin-preview fluid-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.fluid">Fluide</strong><small data-i18n="settings.skin.fluidDescription">Volutes colorées déformées par les fréquences.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="feedback" data-category="retro modern">
+            <input type="radio" name="skin" value="feedback">
+            <span class="skin-preview feedback-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.feedback">Feedback psychédélique</strong><small data-i18n="settings.skin.feedbackDescription">La frame précédente devient une traînée kaléidoscopique.</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="milkdrop-spiral" data-category="milkdrop retro">
+            <input type="radio" name="skin" value="milkdrop-spiral">
+            <span class="skin-preview milkdrop-spiral-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.milkdropSpiral">MilkDrop — Spirale</strong><small data-i18n="settings.skin.milkdropSpiralDescription">Preset classique « Infused with the Spiral ».</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="milkdrop-fractal" data-category="milkdrop retro">
+            <input type="radio" name="skin" value="milkdrop-fractal">
+            <span class="skin-preview milkdrop-fractal-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.milkdropFractal">MilkDrop — Fractale</strong><small data-i18n="settings.skin.milkdropFractalDescription">Preset classique « Smashing Fractals ».</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="milkdrop-neon" data-category="milkdrop retro">
+            <input type="radio" name="skin" value="milkdrop-neon">
+            <span class="skin-preview milkdrop-neon-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.milkdropNeon">MilkDrop — Néon</strong><small data-i18n="settings.skin.milkdropNeonDescription">Preset classique « Neon Mindblob Graffiti ».</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
+          </label>
+
+          <label class="skin-option" data-skin-option="milkdrop-liquid" data-category="milkdrop retro">
+            <input type="radio" name="skin" value="milkdrop-liquid">
+            <span class="skin-preview milkdrop-liquid-preview" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="skin-card-footer"><span class="skin-choice"><strong data-i18n="settings.skin.milkdropLiquid">MilkDrop — Feu liquide</strong><small data-i18n="settings.skin.milkdropLiquidDescription">Preset classique « Red Liquid Fire ».</small></span><span class="selection-check" aria-hidden="true">✓</span></span>
           </label>
 
           <label class="skin-option" data-skin-option="battery" data-category="modern">

@@ -115,11 +115,18 @@ namespace WhatIListenWasapi
 
     internal sealed class SpectrumAnalyzer
     {
-        private const int BandCount = 16;
-        private const int FftSize = 2048;
+        private const int BandCount = 64;
+        private const int GroupCount = 6;
+        private const int FftSize = 4096;
+        private const int WaveformSampleCount = 1024;
+        private const double MinimumFrequency = 20d;
+        private const double MaximumFrequency = 16000d;
         private static readonly long UpdateIntervalTicks = 33L * Stopwatch.Frequency / 1000L;
+        private static readonly double[] GroupEdges = { 20d, 60d, 250d, 500d, 2000d, 6000d, 16000d };
 
         private readonly float[] samples = new float[FftSize];
+        private readonly double[] smoothedBands = new double[BandCount];
+        private readonly double[] smoothedGroups = new double[GroupCount];
         private readonly object sync = new object();
         private readonly int sampleRate;
         private int sampleCount;
@@ -184,45 +191,95 @@ namespace WhatIListenWasapi
         {
             var real = new double[FftSize];
             var imaginary = new double[FftSize];
+            double windowSum = 0;
             for (int index = 0; index < FftSize; index++)
             {
                 int sampleIndex = (writePosition + index) % FftSize;
                 double window = 0.5d - 0.5d * Math.Cos(2d * Math.PI * index / (FftSize - 1));
                 real[index] = samples[sampleIndex] * window;
+                windowSum += window;
             }
             Transform(real, imaginary);
 
             var bands = new double[BandCount];
-            int minimumBin = Math.Max(1, (int)Math.Floor(35d * FftSize / sampleRate));
-            int maximumBin = FftSize / 2 - 1;
+            double maximumFrequency = Math.Min(MaximumFrequency, sampleRate * 0.5d);
             for (int band = 0; band < BandCount; band++)
             {
-                double startRatio = band / (double)BandCount;
-                double endRatio = (band + 1) / (double)BandCount;
-                int start = Math.Max(minimumBin, (int)Math.Floor(minimumBin * Math.Pow(maximumBin / (double)minimumBin, startRatio)));
-                int end = Math.Min(maximumBin, Math.Max(start + 1, (int)Math.Floor(minimumBin * Math.Pow(maximumBin / (double)minimumBin, endRatio))));
-                double total = 0;
-                for (int bin = start; bin <= end; bin++)
-                {
-                    double magnitude = Math.Sqrt(real[bin] * real[bin] + imaginary[bin] * imaginary[bin]) / FftSize;
-                    total += magnitude;
-                }
-                double average = total / (end - start + 1);
-                double decibels = 20d * Math.Log10(Math.Max(average, 0.00000001d));
-                double normalized = Math.Min(1d, Math.Max(0d, (decibels + 72d) / 60d));
-                bands[band] = Math.Pow(normalized, 0.72d);
+                double start = LogFrequency(band / (double)BandCount, maximumFrequency);
+                double end = LogFrequency((band + 1d) / BandCount, maximumFrequency);
+                double target = AnalyzeRange(real, imaginary, start, end, windowSum);
+                smoothedBands[band] = Smooth(smoothedBands[band], target);
+                bands[band] = smoothedBands[band];
             }
 
-            double level = 0;
+            var groups = new double[GroupCount];
+            for (int group = 0; group < GroupCount; group++)
+            {
+                double target = AnalyzeRange(real, imaginary, GroupEdges[group], Math.Min(GroupEdges[group + 1], maximumFrequency), windowSum);
+                smoothedGroups[group] = Smooth(smoothedGroups[group], target);
+                groups[group] = smoothedGroups[group];
+            }
+
+            double level = groups[0] * .12d + groups[1] * .23d + groups[2] * .13d
+                + groups[3] * .24d + groups[4] * .18d + groups[5] * .10d;
             var serializedBands = new string[BandCount];
             for (int index = 0; index < BandCount; index++)
             {
-                level += bands[index];
                 serializedBands[index] = bands[index].ToString("0.0000", CultureInfo.InvariantCulture);
             }
-            level /= BandCount;
+            var serializedGroups = new string[GroupCount];
+            for (int index = 0; index < GroupCount; index++)
+            {
+                serializedGroups[index] = groups[index].ToString("0.0000", CultureInfo.InvariantCulture);
+            }
+            var waveform = new byte[WaveformSampleCount];
+            int waveformStart = (writePosition - WaveformSampleCount + FftSize) % FftSize;
+            for (int index = 0; index < WaveformSampleCount; index++)
+            {
+                double sample = Math.Min(1d, Math.Max(-1d, samples[(waveformStart + index) % FftSize]));
+                waveform[index] = (byte)Math.Round((sample * .5d + .5d) * 255d);
+            }
             Console.WriteLine("{\"type\":\"levels\",\"bands\":[" + String.Join(",", serializedBands)
-                + "],\"level\":" + level.ToString("0.0000", CultureInfo.InvariantCulture) + "}");
+                + "],\"groups\":[" + String.Join(",", serializedGroups)
+                + "],\"waveform\":\"" + Convert.ToBase64String(waveform)
+                + "\",\"level\":" + level.ToString("0.0000", CultureInfo.InvariantCulture)
+                + ",\"fftSize\":" + FftSize + ",\"sampleRate\":" + sampleRate + "}");
+        }
+
+        private double LogFrequency(double ratio, double maximumFrequency)
+        {
+            return MinimumFrequency * Math.Pow(maximumFrequency / MinimumFrequency, ratio);
+        }
+
+        private double AnalyzeRange(double[] real, double[] imaginary, double lowFrequency, double highFrequency, double windowSum)
+        {
+            if (highFrequency <= lowFrequency) return 0;
+            int firstBin = Math.Max(1, (int)Math.Ceiling(lowFrequency * FftSize / sampleRate));
+            int lastBin = Math.Min(FftSize / 2 - 1, (int)Math.Floor(highFrequency * FftSize / sampleRate));
+            if (lastBin < firstBin)
+            {
+                firstBin = Math.Max(1, Math.Min(FftSize / 2 - 1,
+                    (int)Math.Round((lowFrequency + highFrequency) * .5d * FftSize / sampleRate)));
+                lastBin = firstBin;
+            }
+            double energy = 0;
+            int count = 0;
+            for (int bin = firstBin; bin <= lastBin; bin++)
+            {
+                double magnitude = 2d * Math.Sqrt(real[bin] * real[bin] + imaginary[bin] * imaginary[bin]) / Math.Max(1d, windowSum);
+                energy += magnitude * magnitude;
+                count++;
+            }
+            double rmsMagnitude = Math.Sqrt(energy / Math.Max(1, count));
+            double decibels = 20d * Math.Log10(Math.Max(rmsMagnitude, 0.00000001d));
+            double normalized = Math.Min(1d, Math.Max(0d, (decibels + 78d) / 66d));
+            return Math.Pow(normalized, .68d);
+        }
+
+        private static double Smooth(double previous, double target)
+        {
+            double coefficient = target > previous ? .58d : .16d;
+            return previous + (target - previous) * coefficient;
         }
 
         private static void Transform(double[] real, double[] imaginary)

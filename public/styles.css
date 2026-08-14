@@ -73,6 +73,19 @@
 .tunnel-preview { background: repeating-radial-gradient(ellipse at 72% 50%, transparent 0 9px, rgba(58, 224, 255, .68) 10px 11px, transparent 12px 19px), conic-gradient(from 25deg at 72% 50%, #08031c, #4221a3, #07bad1, #16042f, #f82aaa, #08031c); }
 .tunnel-preview i { background: linear-gradient(145deg, #38dbff, #5636d9 58%, #ff3db5); }
 .tunnel-preview em { background: linear-gradient(90deg, #2ee7ff, #9c42ff, #ff42a8); box-shadow: 0 0 8px #6d42ff; height: 3px; }
+.spiral-preview { background: repeating-radial-gradient(circle at 72% 50%, transparent 0 7px, rgba(255, 76, 218, .45) 8px 9px, transparent 10px 16px), conic-gradient(from 30deg at 72% 50%, #0a1032, #e82caa, #25dff2, #642cdb, #0a1032); }
+.spiral-preview i, .plasma-preview i, .fractal-preview i, .fluid-preview i, .feedback-preview i { background: linear-gradient(145deg, #44e7ff, #6b3fdf 54%, #ff47b3); }
+.spiral-preview em, .plasma-preview em, .fractal-preview em, .fluid-preview em, .feedback-preview em { background: linear-gradient(90deg, #2be6ff, #8b45ff, #ff3eac); box-shadow: 0 0 8px #7845ff; height: 4px; }
+.plasma-preview { background: radial-gradient(circle at 72% 50%, rgba(255, 72, 188, .85), transparent 18%), radial-gradient(circle at 58% 35%, #29d9ff, transparent 30%), radial-gradient(circle at 85% 72%, #713cff, transparent 35%), #08051c; }
+.fractal-preview { background: repeating-conic-gradient(from 18deg at 72% 50%, #081329 0 7deg, #2ad6ed 8deg 9deg, #5523a3 10deg 15deg, #f137a7 16deg 17deg); }
+.fluid-preview { background: radial-gradient(ellipse at 75% 35%, #1ed6d2, transparent 30%), radial-gradient(ellipse at 68% 68%, #d830b4, transparent 34%), linear-gradient(140deg, #071631, #381168 55%, #062e38); }
+.feedback-preview { background: repeating-radial-gradient(ellipse at 72% 50%, transparent 0 6px, rgba(69, 231, 255, .5) 7px 8px, transparent 9px 15px), repeating-conic-gradient(from 12deg at 72% 50%, #25073d 0 10deg, #f130a5 11deg 13deg, #123b71 14deg 24deg); }
+.milkdrop-spiral-preview { background: repeating-conic-gradient(from 12deg at 72% 50%, #08051d 0 9deg, #e52fae 10deg 12deg, #31dff0 13deg 16deg, #301267 17deg 27deg); }
+.milkdrop-fractal-preview { background: repeating-radial-gradient(circle at 72% 50%, transparent 0 5px, rgba(72, 238, 255, .62) 6px 7px, transparent 8px 13px), conic-gradient(at 72% 50%, #071229, #ca2ac2, #30e6ec, #4423a7, #071229); }
+.milkdrop-neon-preview { background: radial-gradient(circle at 72% 50%, #ff4fd2 0 4%, transparent 5%), repeating-radial-gradient(circle at 72% 50%, #071024 0 8px, #27e6ff 9px 11px, #6d1db2 12px 18px); }
+.milkdrop-liquid-preview { background: radial-gradient(ellipse at 72% 48%, #ffd34b, #f02b19 18%, #78101f 38%, #120419 66%, #020208); }
+.milkdrop-spiral-preview i, .milkdrop-fractal-preview i, .milkdrop-neon-preview i, .milkdrop-liquid-preview i { background: linear-gradient(145deg, #3be9ff, #7041df 55%, #ff45ae); }
+.milkdrop-spiral-preview em, .milkdrop-fractal-preview em, .milkdrop-neon-preview em, .milkdrop-liquid-preview em { background: linear-gradient(90deg, #2be6ff, #9a42ff, #ff3c9f); box-shadow: 0 0 8px #7845ff; height: 4px; }
 .particles-preview { background: radial-gradient(circle at 72% 31%, #fff 0 1px, #48dfff 2px, transparent 5px), radial-gradient(circle at 82% 68%, #fff 0 1px, #ff4fbd 2px, transparent 6px), radial-gradient(circle at 58% 56%, #fff 0 1px, #8f63ff 2px, transparent 5px), radial-gradient(circle at 38% 19%, #2fc9ff 0 1px, transparent 4px), radial-gradient(circle at 50% 77%, #ff53d2 0 1px, transparent 5px), #05091a; }
 .particles-preview i { background: linear-gradient(145deg, #53e6ff, #603bc7 52%, #f04abd); }
 .particles-preview em { background: repeating-radial-gradient(circle at 70% 50%, #a9f6ff 0 1px, transparent 2px 6px); height: 25px; }
