@@ -59,6 +59,11 @@
 .skin-preview i { border: 1px solid rgba(255, 255, 255, .46); border-radius: 6px; bottom: 14%; left: 8%; width: 23%; aspect-ratio: 1; }
 .skin-preview b { background: #fff; border-radius: 999px; bottom: 38%; height: 6px; left: 35%; width: 39%; }
 .skin-preview em { border-radius: 2px; bottom: 20%; height: 14px; left: 35%; width: 52%; }
+.random-preview { background: conic-gradient(from 25deg at 72% 48%, #07142d, #e52fae, #29dff1, #712edf, #f34b29, #07142d); }
+.random-preview::before { background: repeating-radial-gradient(circle at 72% 48%, transparent 0 8px, rgba(255, 255, 255, .42) 9px 10px, transparent 11px 17px); content: ''; inset: 0; position: absolute; }
+.random-preview i { background: linear-gradient(145deg, #3be9ff, #7041df 55%, #ff45ae); }
+.random-preview b { background: linear-gradient(90deg, #fff, #72ecff, #ff71cf); box-shadow: 0 0 8px #8a4dff; }
+.random-preview em { background: repeating-linear-gradient(90deg, #2be6ff 0 5px, #9a42ff 5px 10px, #ff3c9f 10px 15px); box-shadow: 0 0 8px #7845ff; height: 4px; }
 .luna-preview { background: radial-gradient(circle at 70% 24%, #d5f3ff 0 10%, transparent 11%), linear-gradient(145deg, #0e6db8, #74b6e7 48%, #d8f2ff); }
 .luna-preview i { background: linear-gradient(145deg, #f0faff, #287bc1); }
 .luna-preview b { background: #f5fbff; }

@@ -6,7 +6,7 @@ import { createSessionManager } from 'windows-media-sessions';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
-const overlaySkins = new Set(['luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid']);
+const overlaySkins = new Set<OverlaySkin>(['random', 'luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid']);
 const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const spectrumPalettes = new Set(['modern', 'ocean-mist', 'fire-storm', 'scope']);
 const supportedLanguages = new Set(['fr', 'en']);
@@ -21,7 +21,7 @@ const defaultSettings = Object.freeze({
   language: 'fr',
   appTheme: 'dark',
 } satisfies OverlaySettings);
-const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.freeze({
+const visualizerForSkin: Readonly<Record<ConcreteOverlaySkin, VisualizerMode>> = Object.freeze({
   luna: 'bars',
   winamp: 'spectrum',
   glass: 'ripple',
@@ -44,6 +44,22 @@ const visualizerForSkin: Readonly<Record<OverlaySkin, VisualizerMode>> = Object.
   'milkdrop-neon': 'milkdrop',
   'milkdrop-liquid': 'milkdrop',
 });
+const randomVisualSkins: readonly ConcreteOverlaySkin[] = Object.freeze([
+  'tunnel',
+  'particles',
+  'spiral',
+  'plasma',
+  'kaleidoscope',
+  'fractal',
+  'fluid',
+  'feedback',
+  'milkdrop-spiral',
+  'milkdrop-fractal',
+  'milkdrop-neon',
+  'milkdrop-liquid',
+]);
+const randomSkinMinDelayMs = 15_000;
+const randomSkinMaxDelayMs = 45_000;
 const audioBandCount = 64;
 const audioGroupCount = 6;
 const coverRefreshDelayMs = 5000;
@@ -96,6 +112,7 @@ interface AudioState extends AudioLevels {
 }
 
 interface ServiceState extends OverlaySettings {
+  effectiveSkin: ConcreteOverlaySkin;
   visualizer: VisualizerMode;
   available: boolean;
   title: string;
@@ -203,7 +220,12 @@ function deezerMatchScore(track: DeezerTrackResult, title: string, artist: strin
 }
 
 function normalizeSkin(value: unknown): OverlaySkin {
-  return typeof value === 'string' && overlaySkins.has(value) ? value as OverlaySkin : defaultSettings.skin;
+  return typeof value === 'string' && overlaySkins.has(value as OverlaySkin) ? value as OverlaySkin : defaultSettings.skin;
+}
+
+function chooseRandomVisualSkin(previous?: ConcreteOverlaySkin): ConcreteOverlaySkin {
+  const choices = randomVisualSkins.filter((skin) => skin !== previous);
+  return choices[Math.floor(Math.random() * choices.length)] ?? randomVisualSkins[0]!;
 }
 
 function normalizeNeonPalette(value: unknown): NeonPalette {
@@ -302,6 +324,9 @@ export async function startOverlayService({
   const servicePort = parsePort(port, 38491);
   const serviceOrigin = localOrigin(host, servicePort);
   const savedSettings = await loadSettings(settingsPath);
+  const initialEffectiveSkin = savedSettings.skin === 'random'
+    ? chooseRandomVisualSkin()
+    : savedSettings.skin;
   const state: ServiceState = {
     available: false,
     title: '',
@@ -310,8 +335,9 @@ export async function startOverlayService({
     playback: 'stopped',
     source: '',
     thumbnail: '',
-    visualizer: visualizerForSkin[savedSettings.skin],
+    visualizer: visualizerForSkin[initialEffectiveSkin],
     skin: savedSettings.skin,
+    effectiveSkin: initialEffectiveSkin,
     neonPalette: savedSettings.neonPalette,
     spectrumPalette: savedSettings.spectrumPalette,
     audioOutputDeviceId: savedSettings.audioOutputDeviceId,
@@ -337,11 +363,38 @@ export async function startOverlayService({
   let stopListening = () => {};
   let isListening = false;
   let trackKey = '';
+  let randomTrackKey = '';
+  let randomSkinTimer: ReturnType<typeof setTimeout> | undefined;
   let thumbnailAwaitingRefresh = false;
   let deezerCoverTrackKey = '';
   const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
   const deezerLookupTrackKeys = new Set<string>();
   const settingsListeners = new Set<(settings: OverlaySettings) => void>();
+
+  function applyRandomVisualSkin(): void {
+    state.effectiveSkin = chooseRandomVisualSkin(state.effectiveSkin);
+    state.visualizer = visualizerForSkin[state.effectiveSkin];
+  }
+
+  function clearRandomSkinTimer(): void {
+    if (randomSkinTimer) clearTimeout(randomSkinTimer);
+    randomSkinTimer = undefined;
+  }
+
+  function syncRandomSkinTimer(restart = false): void {
+    const eligible = state.skin === 'random' && state.available && state.playback === 'playing';
+    if (restart || !eligible) clearRandomSkinTimer();
+    if (!eligible || randomSkinTimer) return;
+
+    const delay = randomSkinMinDelayMs
+      + Math.floor(Math.random() * (randomSkinMaxDelayMs - randomSkinMinDelayMs + 1));
+    randomSkinTimer = setTimeout(() => {
+      randomSkinTimer = undefined;
+      if (state.skin !== 'random' || !state.available || state.playback !== 'playing') return;
+      applyRandomVisualSkin();
+      syncRandomSkinTimer();
+    }, delay);
+  }
 
   async function findDeezerCover(title: string, artist: string, album: string): Promise<string> {
     const searchUrl = new URL(deezerSearchUrl);
@@ -446,6 +499,7 @@ export async function startOverlayService({
 
     const nextTrackKey = [next.source, next.title, next.artist, next.album].join('\u001f');
     const trackChanged = nextTrackKey !== trackKey;
+    const nextRandomTrackKey = [next.source, next.title, next.artist].join('\u001f');
     // Deezer publie parfois une miniature avec une piste de retard. Après un
     // changement de titre, la pochette Windows est donc ignorée : le secours
     // Deezer, déclenché cinq secondes plus tard, fournit l'image associée au
@@ -467,6 +521,16 @@ export async function startOverlayService({
     const changed = (['available', 'title', 'artist', 'album', 'playback', 'source', 'thumbnail'] as const)
       .some((key) => state[key] !== next[key]);
     Object.assign(state, next);
+    if (state.skin !== 'random' || !state.available) {
+      randomTrackKey = '';
+      syncRandomSkinTimer();
+    } else if (nextRandomTrackKey !== randomTrackKey) {
+      randomTrackKey = nextRandomTrackKey;
+      applyRandomVisualSkin();
+      syncRandomSkinTimer(true);
+    } else {
+      syncRandomSkinTimer();
+    }
     if (changed) state.version += 1;
   }
 
@@ -481,7 +545,7 @@ export async function startOverlayService({
       error: state.error || undefined,
       version: state.version,
       visualizer: state.visualizer,
-      skin: state.skin,
+      skin: state.effectiveSkin,
       neonPalette: state.neonPalette,
       spectrumPalette: state.spectrumPalette,
       titleMarquee: state.titleMarquee,
@@ -656,7 +720,15 @@ export async function startOverlayService({
         if (typeof payload.audioOutputDeviceId === 'string') state.audioOutputDeviceId = normalizeAudioOutputDeviceId(payload.audioOutputDeviceId);
         if (typeof payload.skin === 'string') {
           state.skin = payload.skin as OverlaySkin;
-          state.visualizer = visualizerForSkin[state.skin];
+          if (state.skin === 'random') applyRandomVisualSkin();
+          else {
+            state.effectiveSkin = state.skin;
+            state.visualizer = visualizerForSkin[state.effectiveSkin];
+          }
+          randomTrackKey = state.skin === 'random' && state.available
+            ? [state.source, state.title, state.artist].join('\u001f')
+            : '';
+          syncRandomSkinTimer(true);
         }
         await saveSettings();
         notifySettingsChanged();
@@ -814,6 +886,7 @@ export async function startOverlayService({
     },
     async close() {
       stopListening();
+      clearRandomSkinTimer();
       for (const timer of pendingMetadataRefreshes) clearTimeout(timer);
       pendingMetadataRefreshes.clear();
       for (const response of audioSubscribers) response.end();

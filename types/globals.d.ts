@@ -41,7 +41,8 @@ interface AutomaticUpdateState {
 }
 
 type VisualizerMode = 'bars' | 'spectrum' | 'ripple' | 'pulse' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'spiral' | 'plasma' | 'kaleidoscope' | 'fractal' | 'fluid' | 'feedback' | 'milkdrop';
-type OverlaySkin = 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'spiral' | 'plasma' | 'kaleidoscope' | 'fractal' | 'fluid' | 'feedback' | 'milkdrop-spiral' | 'milkdrop-fractal' | 'milkdrop-neon' | 'milkdrop-liquid';
+type OverlaySkin = 'random' | 'luna' | 'winamp' | 'glass' | 'aura' | 'neon' | 'spectrum' | 'battery' | 'meter' | 'oscilloscope' | 'tunnel' | 'particles' | 'spiral' | 'plasma' | 'kaleidoscope' | 'fractal' | 'fluid' | 'feedback' | 'milkdrop-spiral' | 'milkdrop-fractal' | 'milkdrop-neon' | 'milkdrop-liquid';
+type ConcreteOverlaySkin = Exclude<OverlaySkin, 'random'>;
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
 type AppTheme = 'dark' | 'light';
@@ -67,7 +68,7 @@ interface NowPlayingData {
   version: number;
   coverUrl: string;
   visualizer: VisualizerMode;
-  skin: OverlaySkin;
+  skin: ConcreteOverlaySkin;
   neonPalette: NeonPalette;
   spectrumPalette: SpectrumPalette;
   titleMarquee: boolean;
