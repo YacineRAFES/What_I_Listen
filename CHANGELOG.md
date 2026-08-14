@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.8.0...v0.9.0) (2026-08-14)
+
+### Features
+
+* ajoute l'intégration SAMMI ([5240968](https://github.com/YacineRAFES/What_I_Listen/commit/52409683e10cf7809e0754024d87d208c6507d62))
+
+### Bug Fixes
+
+* synchroniser les pochettes Windows ([0b3496f](https://github.com/YacineRAFES/What_I_Listen/commit/0b3496fdc61be35ca3a4cc2b6c97430f1f37825d))
+
 ## [0.8.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.7.0...v0.8.0) (2026-08-14)
 
 ### Features
