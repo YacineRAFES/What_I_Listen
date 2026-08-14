@@ -460,15 +460,12 @@ export async function startOverlayService({
 
   function chooseSession(sessions: import('windows-media-sessions').MediaSession[]) {
     const candidates = sessions.filter(matchesConfiguredApp);
-    const playing = sessions.filter((session) => session.playbackStatus === 'playing');
 
-    // Deezer joué dans un navigateur est souvent publié par Windows sous le nom
-    // du navigateur. On privilégie toujours Deezer, mais une session en lecture
-    // reste un meilleur résultat que l’absence totale de morceau.
+    // Ne jamais utiliser une autre application comme solution de repli : Windows
+    // identifie Deezer Web comme le navigateur et ne fournit pas l'URL de l'onglet.
+    // Accepter une session générique ferait donc passer YouTube pour Deezer.
     return candidates.find((session) => session.playbackStatus === 'playing')
       ?? candidates[0]
-      ?? playing.find((session) => Boolean(session.title || session.artist))
-      ?? playing[0]
       ?? null;
   }
 
