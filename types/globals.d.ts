@@ -5,6 +5,20 @@ interface AudioLevels {
   waveform: string;
 }
 
+interface StreamDiagnosticData {
+  deezerDetected: boolean;
+  trackReceived: boolean;
+  audioDeviceAvailable: boolean;
+  audioSignalMeasured: boolean;
+  audioLevel: number;
+  audioUpdatedAt: number;
+  audioError?: string;
+  overlayAccessible: boolean;
+  sammiEnabled: boolean;
+  sammiConnected: boolean;
+  sammiError?: string;
+}
+
 interface AudioOutputDevice {
   id: string;
   name: string;

@@ -34,6 +34,46 @@
       </header>
 
       <div class="home-grid">
+        <section class="dashboard-panel diagnostic-panel" aria-labelledby="diagnostic-title">
+          <div class="panel-heading diagnostic-heading">
+            <div><p class="workspace-eyebrow" data-i18n="app.diagnostic.eyebrow">AVANT DE LANCER LE STREAM</p><h2 id="diagnostic-title" data-i18n="app.diagnostic.title">Diagnostic express</h2></div>
+            <div class="diagnostic-summary"><span id="diagnostic-count" aria-live="polite">0/5</span><button id="diagnostic-refresh" class="diagnostic-refresh" type="button" data-i18n="app.diagnostic.refresh">Revérifier</button></div>
+          </div>
+          <p class="diagnostic-intro" data-i18n="app.diagnostic.intro">Tout ce qui doit fonctionner avant de passer en direct, avec la correction à appliquer si un contrôle échoue.</p>
+          <ul class="diagnostic-list">
+            <li id="diagnostic-deezer" class="diagnostic-item checking">
+              <span class="diagnostic-icon" aria-hidden="true"></span>
+              <div class="diagnostic-copy"><strong data-i18n="app.diagnostic.deezer">Deezer détecté</strong><span class="diagnostic-detail" data-diagnostic-detail></span><span class="diagnostic-action" data-diagnostic-action></span></div>
+              <span class="diagnostic-state" data-diagnostic-state></span>
+            </li>
+            <li id="diagnostic-track" class="diagnostic-item checking">
+              <span class="diagnostic-icon" aria-hidden="true"></span>
+              <div class="diagnostic-copy"><strong data-i18n="app.diagnostic.track">Morceau reçu</strong><span class="diagnostic-detail" data-diagnostic-detail></span><span class="diagnostic-action" data-diagnostic-action></span></div>
+              <span class="diagnostic-state" data-diagnostic-state></span>
+            </li>
+            <li id="diagnostic-device" class="diagnostic-item checking">
+              <span class="diagnostic-icon" aria-hidden="true"></span>
+              <div class="diagnostic-copy"><strong data-i18n="app.diagnostic.device">Périphérique audio disponible</strong><span class="diagnostic-detail" data-diagnostic-detail></span><a class="diagnostic-action" href="/settings#audio-output-device" data-diagnostic-action></a></div>
+              <span class="diagnostic-state" data-diagnostic-state></span>
+            </li>
+            <li id="diagnostic-signal" class="diagnostic-item checking">
+              <span class="diagnostic-icon" aria-hidden="true"></span>
+              <div class="diagnostic-copy"><strong data-i18n="app.diagnostic.signal">Signal audio mesuré</strong><span class="diagnostic-detail" data-diagnostic-detail></span><span class="diagnostic-action" data-diagnostic-action></span></div>
+              <div class="diagnostic-meter-wrap"><span class="diagnostic-state" data-diagnostic-state></span><div id="diagnostic-meter" class="diagnostic-meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria-label="app.diagnostic.meterLabel" aria-label="Niveau audio mesuré"><i></i></div></div>
+            </li>
+            <li id="diagnostic-overlay" class="diagnostic-item checking">
+              <span class="diagnostic-icon" aria-hidden="true"></span>
+              <div class="diagnostic-copy"><strong data-i18n="app.diagnostic.overlay">Serveur overlay accessible</strong><span class="diagnostic-detail" data-diagnostic-detail></span><span class="diagnostic-action" data-diagnostic-action></span></div>
+              <span class="diagnostic-state" data-diagnostic-state></span>
+            </li>
+            <li id="diagnostic-sammi" class="diagnostic-item checking">
+              <span class="diagnostic-icon" aria-hidden="true"></span>
+              <div class="diagnostic-copy"><strong data-i18n="app.diagnostic.sammi">SAMMI connecté</strong><span class="diagnostic-detail" data-diagnostic-detail></span><a class="diagnostic-action" href="/settings#sammi-enabled" data-diagnostic-action></a></div>
+              <span class="diagnostic-state" data-diagnostic-state></span>
+            </li>
+          </ul>
+        </section>
+
         <section class="dashboard-panel now-playing-panel" aria-live="polite">
           <div class="panel-heading">
             <div><p class="workspace-eyebrow" data-i18n="app.eyebrow">LECTURE EN COURS</p><h2 data-i18n="app.dashboard.nowPlaying">Morceau détecté</h2></div>

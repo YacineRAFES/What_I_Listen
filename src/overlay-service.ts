@@ -72,6 +72,11 @@ const maxCoverBytes = 5 * 1024 * 1024;
 const maxCoverBase64Length = Math.ceil(maxCoverBytes * 4 / 3);
 const maxAudioSubscribers = 8;
 const sammiRequestTimeoutMs = 4_000;
+const sammiDiagnosticTimeoutMs = 1_500;
+const sammiDiagnosticCacheMs = 5_000;
+const audioFreshnessMs = 3_000;
+const audioSignalThreshold = 0.002;
+const audioSignalHoldMs = 2_000;
 const securityHeaders = Object.freeze({
   'Content-Security-Policy': "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'",
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -336,6 +341,10 @@ export async function startOverlayService({
   let sammiTrackKey = '';
   let mediaStateInitialized = false;
   let sammiDeliveryQueue = Promise.resolve();
+  let sammiDiagnosticPromise: Promise<Pick<StreamDiagnosticData, 'sammiConnected' | 'sammiError'>> | null = null;
+  let sammiDiagnosticResult: Pick<StreamDiagnosticData, 'sammiConnected' | 'sammiError'> = { sammiConnected: false };
+  let sammiDiagnosticExpiresAt = 0;
+  let audioSignalMeasuredAt = 0;
   let randomSkinTimer: ReturnType<typeof setTimeout> | undefined;
   const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
   const activeMetadataRefreshManagers = new Set<ReturnType<typeof createSessionManager>>();
@@ -388,6 +397,44 @@ export async function startOverlayService({
       throw error;
     } finally {
       clearTimeout(timeout);
+    }
+  }
+
+  async function probeSammi(): Promise<Pick<StreamDiagnosticData, 'sammiConnected' | 'sammiError'>> {
+    if (!state.sammiEnabled) return { sammiConnected: false };
+    if (Date.now() < sammiDiagnosticExpiresAt) return sammiDiagnosticResult;
+    if (sammiDiagnosticPromise) return sammiDiagnosticPromise;
+
+    sammiDiagnosticPromise = (async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), sammiDiagnosticTimeoutMs);
+      try {
+        const headers: Record<string, string> = {};
+        if (state.sammiPassword) headers.Authorization = state.sammiPassword;
+        const response = await fetch(
+          `http://127.0.0.1:${state.sammiPort}/api?request=getVariable&name=api_server_opened`,
+          { headers, signal: controller.signal },
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const body = await response.json() as { data?: unknown };
+        if (body.data !== true) throw new Error('Le serveur API local n’a pas confirmé son état.');
+        return { sammiConnected: true };
+      } catch (error) {
+        const message = controller.signal.aborted
+          ? 'SAMMI Core ne répond pas dans le délai prévu.'
+          : errorMessage(error);
+        return { sammiConnected: false, sammiError: message.slice(0, 300) };
+      } finally {
+        clearTimeout(timeout);
+      }
+    })();
+
+    try {
+      sammiDiagnosticResult = await sammiDiagnosticPromise;
+      sammiDiagnosticExpiresAt = Date.now() + sammiDiagnosticCacheMs;
+      return sammiDiagnosticResult;
+    } finally {
+      sammiDiagnosticPromise = null;
     }
   }
 
@@ -597,6 +644,25 @@ export async function startOverlayService({
     };
   }
 
+  async function diagnosticsForClient(): Promise<StreamDiagnosticData> {
+    const audioDeviceAvailable = state.audio.active
+      && Date.now() - state.audio.updatedAt <= audioFreshnessMs;
+    const sammi = await probeSammi();
+    return {
+      deezerDetected: Boolean(state.source) && !state.error,
+      trackReceived: state.available && !state.error,
+      audioDeviceAvailable,
+      audioSignalMeasured: audioDeviceAvailable
+        && Date.now() - audioSignalMeasuredAt <= audioSignalHoldMs,
+      audioLevel: state.audio.level,
+      audioUpdatedAt: state.audio.updatedAt,
+      audioError: state.audio.error || undefined,
+      overlayAccessible: isListening && !closing,
+      sammiEnabled: state.sammiEnabled,
+      ...sammi,
+    };
+  }
+
   async function saveSettings() {
     if (!settingsPath) return;
     await writeFile(settingsPath, `${JSON.stringify(settingsForClient(), null, 2)}\n`, 'utf8');
@@ -627,11 +693,13 @@ export async function startOverlayService({
       updatedAt: Date.now(),
       error: '',
     });
+    if (levels.level >= audioSignalThreshold) audioSignalMeasuredAt = Date.now();
     notifyAudioSubscribers();
     return true;
   }
 
   function setAudioCaptureError(error: unknown): void {
+    audioSignalMeasuredAt = 0;
     state.audio.active = false;
     state.audio.error = String(error || 'La capture audio a été interrompue.').slice(0, 300);
     state.audio.bands = Array(audioBandCount).fill(0);
@@ -751,6 +819,7 @@ export async function startOverlayService({
         if (typeof payload.sammiPassword === 'string') state.sammiPassword = normalizeSammiPassword(payload.sammiPassword);
         if (typeof payload.sammiWebhookTrigger === 'string') state.sammiWebhookTrigger = normalizeSammiWebhookTrigger(payload.sammiWebhookTrigger);
         if (typeof payload.sammiMessageTemplate === 'string') state.sammiMessageTemplate = normalizeSammiMessageTemplate(payload.sammiMessageTemplate);
+        if (updatesSammiEnabled || updatesSammiPort || updatesSammiPassword) sammiDiagnosticExpiresAt = 0;
         if (typeof payload.skin === 'string') {
           state.skin = payload.skin as OverlaySkin;
           if (state.skin === 'random') applyRandomVisualSkin();
@@ -894,6 +963,9 @@ export async function startOverlayService({
         break;
       case '/api/audio':
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(audioForClient()));
+        break;
+      case '/api/diagnostics':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(await diagnosticsForClient()));
         break;
       default:
         if (url.pathname === '/cover' || /^\/cover\/\d+$/.test(url.pathname)) {
