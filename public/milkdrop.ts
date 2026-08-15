@@ -27,6 +27,16 @@ function decodeWaveform(encoded: string): Uint8Array {
   }
 }
 
+function applyWaveformIntensity(waveform: Uint8Array, intensity: number): Uint8Array {
+  if (waveform === silentWaveform || intensity === 1) return waveform;
+  const scaled = new Uint8Array(waveform.length);
+  for (let index = 0; index < waveform.length; index += 1) {
+    const deviation = (waveform[index]! - 128) * intensity;
+    scaled[index] = Math.max(0, Math.min(255, Math.round(128 + deviation)));
+  }
+  return scaled;
+}
+
 export class MilkDropVisualizer {
   readonly available: boolean;
   private readonly visualizer?: ReturnType<typeof butterchurnApi.createVisualizer>;
@@ -52,8 +62,8 @@ export class MilkDropVisualizer {
     }
   }
 
-  updateWaveform(encoded = '') {
-    this.waveform = decodeWaveform(encoded);
+  updateWaveform(encoded = '', intensity = 1) {
+    this.waveform = applyWaveformIntensity(decodeWaveform(encoded), Math.max(.25, Math.min(2, intensity)));
   }
 
   resize(width: number, height: number) {

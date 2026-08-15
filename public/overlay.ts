@@ -4,12 +4,15 @@ import { MilkDropVisualizer, type MilkDropTheme } from './milkdrop.js';
 const card = document.querySelector<HTMLElement>('#now-playing')!;
 const overlayContent = document.querySelector<HTMLElement>('.overlay-content')!;
 const cover = document.querySelector<HTMLImageElement>('#cover')!;
+const coverWrap = document.querySelector<HTMLElement>('.cover-wrap')!;
+const label = document.querySelector<HTMLElement>('.label')!;
 const title = document.querySelector<HTMLElement>('#title')!;
 const titlePrimary = document.querySelector<HTMLSpanElement>('#title-primary')!;
 const titleDuplicate = document.querySelector<HTMLSpanElement>('#title-duplicate')!;
 const artist = document.querySelector<HTMLElement>('#artist')!;
 const album = document.querySelector<HTMLElement>('#album')!;
 const status = document.querySelector<HTMLElement>('#status')!;
+const statusRow = document.querySelector<HTMLElement>('.status')!;
 const { t } = window.i18n;
 const bars = [...document.querySelectorAll<HTMLElement>('.equalizer span')];
 const spectrumBars = [...document.querySelectorAll<HTMLElement>('.spectrum span')];
@@ -69,11 +72,29 @@ if (embeddedMode) document.documentElement.classList.add('embedded-preview');
 let lastAudioUpdate = 0;
 let titleMarqueeAnimationFrame: number | null = null;
 let titleMarqueeEnabled = true;
+let currentDisplayData: NowPlayingData | null = null;
+let pauseHideTimer: number | null = null;
+let pauseScheduleKey = '';
+let pauseHiddenKey = '';
 
 interface StylePreview {
   skin: OverlaySkin;
   neonPalette: NeonPalette;
   spectrumPalette: SpectrumPalette;
+  showCover: boolean;
+  showAlbum: boolean;
+  showStatus: boolean;
+  showLabel: boolean;
+  textScale: number;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  accentColor: string;
+  autoAccent: boolean;
+  audioIntensity: number;
+  animationSpeed: number;
+  fadeInDuration: number;
+  fadeOutDuration: number;
+  pauseHideDelay: number;
 }
 
 const previewSkins = new Set<OverlaySkin>(['random', 'luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid']);
@@ -116,25 +137,64 @@ function dataWithStylePreview(data: NowPlayingData): NowPlayingData {
     visualizer: visualizerForPreviewSkin[skin],
     neonPalette: stylePreview.neonPalette,
     spectrumPalette: stylePreview.spectrumPalette,
+    showCover: stylePreview.showCover,
+    showAlbum: stylePreview.showAlbum,
+    showStatus: stylePreview.showStatus,
+    showLabel: stylePreview.showLabel,
+    textScale: stylePreview.textScale,
+    backgroundOpacity: stylePreview.backgroundOpacity,
+    backgroundBlur: stylePreview.backgroundBlur,
+    accentColor: stylePreview.accentColor,
+    autoAccent: stylePreview.autoAccent,
+    audioIntensity: stylePreview.audioIntensity,
+    animationSpeed: stylePreview.animationSpeed,
+    fadeInDuration: stylePreview.fadeInDuration,
+    fadeOutDuration: stylePreview.fadeOutDuration,
+    pauseHideDelay: stylePreview.pauseHideDelay,
   };
+}
+
+function applyCustomization(data: NowPlayingData) {
+  coverWrap.hidden = !data.showCover;
+  album.hidden = !data.showAlbum;
+  statusRow.hidden = !data.showStatus;
+  label.hidden = !data.showLabel;
+  card.style.setProperty('--text-scale', String(data.textScale || 1));
+  card.style.setProperty('--background-opacity', String(data.backgroundOpacity ?? .92));
+  card.style.setProperty('--background-blur', `${data.backgroundBlur || 0}px`);
+  card.style.setProperty('--cover-background', `url("${data.coverUrl}")`);
+  card.style.setProperty('--animation-duration-factor', String(1 / Math.max(.25, data.animationSpeed || 1)));
+  card.style.setProperty('--fade-in-duration', `${data.fadeInDuration ?? 550}ms`);
+  card.style.setProperty('--fade-out-duration', `${data.fadeOutDuration ?? 350}ms`);
+  card.classList.toggle('custom-background', Math.abs((data.backgroundOpacity ?? .92) - .92) > .001 || (data.backgroundBlur || 0) > 0);
+  if (!data.autoAccent) card.style.setProperty('--custom-accent', data.accentColor || '#8d5cff');
+  else if (cover.complete && cover.naturalWidth) applyAccentFromCover(cover);
 }
 
 function applyAudioLevels(audio?: AudioLevels) {
   // La sortie Windows peut contenir YouTube, un jeu, etc. Le spectrum ne doit
   // bouger que pendant la lecture du morceau suivi par l'overlay (Deezer).
   const liveAudio = latestData?.available && latestData.playback === 'playing' ? audio : undefined;
-  const bands = Array.isArray(liveAudio?.bands) ? liveAudio.bands : [];
-  const level = Math.max(0, Math.min(1, Number(liveAudio?.level) || 0));
+  const audioGain = currentDisplayData?.audioIntensity || 1;
+  const bands = Array.isArray(liveAudio?.bands)
+    ? liveAudio.bands.map((band) => Math.max(0, Math.min(1, (Number(band) || 0) * audioGain)))
+    : [];
+  const groups = Array.isArray(liveAudio?.groups)
+    ? liveAudio.groups.map((group) => Math.max(0, Math.min(1, (Number(group) || 0) * audioGain)))
+    : [];
+  const level = Math.max(0, Math.min(1, (Number(liveAudio?.level) || 0) * audioGain));
   const intensity = Math.max(0.06, Math.pow(level, 0.66));
+  const animationSpeed = currentDisplayData?.animationSpeed || 1;
+  const responseBlend = (base: number) => 1 - Math.pow(1 - base, animationSpeed);
 
   reactiveTargetLevel = level;
-  milkDropVisualizer.updateWaveform(liveAudio?.waveform);
+  milkDropVisualizer.updateWaveform(liveAudio?.waveform, audioGain);
   reactiveTargets.forEach((_, index) => {
     const position = Math.round((index / Math.max(1, reactiveTargets.length - 1)) * Math.max(0, bands.length - 1));
     reactiveTargets[index] = Math.max(0, Math.min(1, Number(bands[position]) || 0));
   });
   reactiveGroupTargets.forEach((_, index) => {
-    reactiveGroupTargets[index] = Math.max(0, Math.min(1, Number(liveAudio?.groups?.[index]) || 0));
+    reactiveGroupTargets[index] = groups[index] || 0;
   });
 
   bars.forEach((bar, index) => {
@@ -151,9 +211,9 @@ function applyAudioLevels(audio?: AudioLevels) {
     const position = Math.round((sourceIndex / Math.max(1, spectrumSourceBandCount - 1)) * Math.max(0, bands.length - 1));
     const band = Math.max(0, Math.min(1, Number(bands[position]) || 0));
     const targetLevel = Math.min(1, Math.pow(band, .68) * 1.16);
-    const smoothing = targetLevel > spectrumLevels[index] ? .82 : .38;
+    const smoothing = responseBlend(targetLevel > spectrumLevels[index] ? .82 : .38);
     spectrumLevels[index] += (targetLevel - spectrumLevels[index]) * smoothing;
-    spectrumPeaks[index] = Math.max(spectrumLevels[index], spectrumPeaks[index] - .1);
+    spectrumPeaks[index] = Math.max(spectrumLevels[index], spectrumPeaks[index] - .1 * animationSpeed);
     bar.style.setProperty('--spectrum-level', String(spectrumLevels[index]));
     bar.style.setProperty('--spectrum-peak', `${(spectrumPeaks[index] * 100).toFixed(2)}%`);
     bar.style.setProperty('--spectrum-empty', `${(100 - spectrumLevels[index] * 100).toFixed(2)}%`);
@@ -162,13 +222,13 @@ function applyAudioLevels(audio?: AudioLevels) {
     const position = Math.round((index / Math.max(1, meterBars.length - 1)) * Math.max(0, bands.length - 1));
     const band = Math.max(0, Math.min(1, Number(bands[position]) || 0));
     const targetLevel = Math.min(1, Math.pow(band, .72) * 1.12);
-    const smoothing = targetLevel > meterLevels[index] ? .8 : .24;
+    const smoothing = responseBlend(targetLevel > meterLevels[index] ? .8 : .24);
     meterLevels[index] += (targetLevel - meterLevels[index]) * smoothing;
-    meterPeaks[index] = Math.max(meterLevels[index], meterPeaks[index] - .026);
+    meterPeaks[index] = Math.max(meterLevels[index], meterPeaks[index] - .026 * animationSpeed);
     bar.style.setProperty('--meter-level', meterLevels[index].toFixed(3));
     bar.style.setProperty('--meter-peak', meterPeaks[index].toFixed(3));
   });
-  oscilloscopePhase += .16 + level * .42;
+  oscilloscopePhase += (.16 + level * .42) * animationSpeed;
   const oscilloscopePoints = Array.from({ length: oscilloscopePointCount }, (_, index) => {
     const progress = index / Math.max(1, oscilloscopePointCount - 1);
     const bandPosition = progress * Math.max(0, bands.length - 1);
@@ -178,7 +238,7 @@ function applyAudioLevels(audio?: AudioLevels) {
     const lowerLevel = Math.max(0, Math.min(1, Number(bands[lowerBand]) || 0));
     const upperLevel = Math.max(0, Math.min(1, Number(bands[upperBand]) || 0));
     const targetLevel = Math.pow(lowerLevel + (upperLevel - lowerLevel) * blend, .72);
-    const smoothing = targetLevel > oscilloscopeLevels[index] ? .72 : .26;
+    const smoothing = responseBlend(targetLevel > oscilloscopeLevels[index] ? .72 : .26);
     oscilloscopeLevels[index] += (targetLevel - oscilloscopeLevels[index]) * smoothing;
     const carrier = Math.sin(oscilloscopePhase + index * 1.43);
     const harmonic = Math.sin(oscilloscopePhase * 1.62 + index * .57) * .25;
@@ -351,33 +411,35 @@ function drawKaleidoscope(time: number) {
 function animateReactiveCanvas(timestamp: number) {
   reactiveFrame = window.requestAnimationFrame(animateReactiveCanvas);
   if (timestamp - reactiveLastFrame < 1000 / 30) return;
-  const elapsed = Math.min(.1, Math.max(0, timestamp - reactiveLastFrame) / 1000);
+  const animationSpeed = currentDisplayData?.animationSpeed || 1;
+  const elapsed = Math.min(.1, Math.max(0, timestamp - reactiveLastFrame) / 1000) * animationSpeed;
   reactiveLastFrame = timestamp;
   const mode = card.dataset.visualizer;
   if (document.hidden || !card.classList.contains('visible') || !['tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop'].includes(mode || '')) return;
 
   resizeReactiveCanvas();
+  const responseBlend = (base: number) => 1 - Math.pow(1 - base, animationSpeed);
   reactiveBands.forEach((value, index) => {
     const target = reactiveTargets[index];
-    reactiveBands[index] = value + (target - value) * (target > value ? .34 : .12);
+    reactiveBands[index] = value + (target - value) * responseBlend(target > value ? .34 : .12);
   });
   reactiveGroups.forEach((value, index) => {
     const target = reactiveGroupTargets[index];
-    reactiveGroups[index] = value + (target - value) * (target > value ? .38 : .11);
+    reactiveGroups[index] = value + (target - value) * responseBlend(target > value ? .38 : .11);
   });
-  reactiveLevel += (reactiveTargetLevel - reactiveLevel) * (reactiveTargetLevel > reactiveLevel ? .3 : .1);
+  reactiveLevel += (reactiveTargetLevel - reactiveLevel) * responseBlend(reactiveTargetLevel > reactiveLevel ? .3 : .1);
   const bandEnergy = reactiveBands.reduce((peak, band) => Math.max(peak, band), 0);
   const motion = Math.max(reactiveLevel, bandEnergy * .6);
   if (motion > .003) reactiveTime += elapsed * (.22 + motion * 2.6);
   reactiveContext.clearRect(0, 0, reactiveWidth, reactiveHeight);
   const time = reactiveTime;
   if (mode === 'milkdrop') {
-    const rendered = milkDropVisualizer.render(card.dataset.skin as MilkDropTheme, Math.max(1 / 60, elapsed));
+    const rendered = milkDropVisualizer.render(card.dataset.skin as MilkDropTheme, Math.max(1 / 240, elapsed));
     card.classList.toggle('milkdrop-fallback', !rendered);
     if (!rendered) drawKaleidoscope(time);
     return;
   }
-  const webGLRendered = reactiveWebGL.render(mode as ReactiveWebGLMode, time, reactiveLevel, reactiveBands, reactiveGroups);
+  const webGLRendered = reactiveWebGL.render(mode as ReactiveWebGLMode, time, reactiveLevel, reactiveBands, reactiveGroups, animationSpeed);
   card.classList.toggle('webgl-fallback', !webGLRendered);
   if (webGLRendered) return;
   if (mode === 'tunnel') drawTunnel(time);
@@ -416,7 +478,8 @@ function updateTitleMarquee() {
   titleDuplicate.textContent = titlePrimary.textContent;
   title.style.setProperty('--title-scroll-gap', `${gap}px`);
   title.style.setProperty('--title-scroll-distance', `-${distance}px`);
-  title.style.setProperty('--title-scroll-duration', `${Math.max(8, distance / 30).toFixed(2)}s`);
+  const animationSpeed = currentDisplayData?.animationSpeed || 1;
+  title.style.setProperty('--title-scroll-duration', `${(Math.max(8, distance / 30) / animationSpeed).toFixed(2)}s`);
   title.classList.add('scrolling');
 }
 
@@ -434,15 +497,21 @@ function setTitle(value: string) {
 function update(data: NowPlayingData) {
   latestData = data;
   data = dataWithStylePreview(data);
+  currentDisplayData = data;
   if (data.language) window.i18n.setLanguage(data.language);
   card.dataset.skin = data.skin || 'luna';
   card.dataset.neonPalette = data.neonPalette || 'violet-cyan';
   card.dataset.spectrumPalette = data.spectrumPalette || 'modern';
+  applyCustomization(data);
   const nextTitleMarqueeEnabled = data.titleMarquee !== false;
   const titleMarqueeChanged = titleMarqueeEnabled !== nextTitleMarqueeEnabled;
   titleMarqueeEnabled = nextTitleMarqueeEnabled;
   if (titleMarqueeChanged) scheduleTitleMarquee();
   if (!data.available) {
+    if (pauseHideTimer !== null) window.clearTimeout(pauseHideTimer);
+    pauseHideTimer = null;
+    pauseScheduleKey = '';
+    pauseHiddenKey = '';
     flattenAudioLevels();
     if (!debugMode) {
       card.classList.remove('visible');
@@ -476,6 +545,23 @@ function update(data: NowPlayingData) {
 
   refreshCover(data);
   card.classList.add('visible');
+  const pausedTrackKey = `${data.source}\u001f${data.title}\u001f${data.artist}\u001f${data.pauseHideDelay}`;
+  if (previewMode || data.playback === 'playing' || data.pauseHideDelay <= 0) {
+    if (pauseHideTimer !== null) window.clearTimeout(pauseHideTimer);
+    pauseHideTimer = null;
+    pauseScheduleKey = '';
+    pauseHiddenKey = '';
+  } else if (pauseHiddenKey === pausedTrackKey) {
+    card.classList.remove('visible');
+  } else if (pauseScheduleKey !== pausedTrackKey) {
+    if (pauseHideTimer !== null) window.clearTimeout(pauseHideTimer);
+    pauseScheduleKey = pausedTrackKey;
+    pauseHideTimer = window.setTimeout(() => {
+      card.classList.remove('visible');
+      pauseHiddenKey = pausedTrackKey;
+      pauseHideTimer = null;
+    }, data.pauseHideDelay * 1000);
+  }
 }
 
 window.addEventListener('message', (event) => {
@@ -491,7 +577,10 @@ window.addEventListener('message', (event) => {
 
   if (!previewSkins.has(event.data.skin)
     || !previewNeonPalettes.has(event.data.neonPalette)
-    || !previewSpectrumPalettes.has(event.data.spectrumPalette)) return;
+    || !previewSpectrumPalettes.has(event.data.spectrumPalette)
+    || !/^#[0-9a-f]{6}$/i.test(event.data.accentColor)
+    || !['showCover', 'showAlbum', 'showStatus', 'showLabel', 'autoAccent'].every((key) => typeof event.data[key] === 'boolean')
+    || !['textScale', 'backgroundOpacity', 'backgroundBlur', 'audioIntensity', 'animationSpeed', 'fadeInDuration', 'fadeOutDuration', 'pauseHideDelay'].every((key) => Number.isFinite(event.data[key]))) return;
 
   if (event.data.skin === 'random' && stylePreview?.skin !== 'random') {
     randomPreviewSkin = randomPreviewSkins[Math.floor(Math.random() * randomPreviewSkins.length)] ?? 'tunnel';
@@ -500,6 +589,20 @@ window.addEventListener('message', (event) => {
     skin: event.data.skin,
     neonPalette: event.data.neonPalette,
     spectrumPalette: event.data.spectrumPalette,
+    showCover: event.data.showCover,
+    showAlbum: event.data.showAlbum,
+    showStatus: event.data.showStatus,
+    showLabel: event.data.showLabel,
+    textScale: event.data.textScale,
+    backgroundOpacity: event.data.backgroundOpacity,
+    backgroundBlur: event.data.backgroundBlur,
+    accentColor: event.data.accentColor,
+    autoAccent: event.data.autoAccent,
+    audioIntensity: event.data.audioIntensity,
+    animationSpeed: event.data.animationSpeed,
+    fadeInDuration: event.data.fadeInDuration,
+    fadeOutDuration: event.data.fadeOutDuration,
+    pauseHideDelay: event.data.pauseHideDelay,
   };
   if (latestData) update(latestData);
 });
@@ -522,12 +625,61 @@ window.addEventListener('pagehide', () => {
   milkDropVisualizer.dispose();
 }, { once: true });
 
+function applyAccentFromCover(image: HTMLImageElement) {
+  if (!currentDisplayData?.autoAccent) return;
+  try {
+    const sample = document.createElement('canvas');
+    sample.width = 24;
+    sample.height = 24;
+    const context = sample.getContext('2d', { willReadFrequently: true });
+    if (!context) return;
+    context.drawImage(image, 0, 0, sample.width, sample.height);
+    const pixels = context.getImageData(0, 0, sample.width, sample.height).data;
+    let red = 0;
+    let green = 0;
+    let blue = 0;
+    let totalWeight = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      const r = pixels[index]!;
+      const g = pixels[index + 1]!;
+      const b = pixels[index + 2]!;
+      const maximum = Math.max(r, g, b);
+      const minimum = Math.min(r, g, b);
+      const saturation = maximum === 0 ? 0 : (maximum - minimum) / maximum;
+      const luminance = (maximum + minimum) / 510;
+      if (saturation < .18 || luminance < .08 || luminance > .94) continue;
+      const weight = .25 + saturation * (1 - Math.abs(luminance - .55));
+      red += r * weight;
+      green += g * weight;
+      blue += b * weight;
+      totalWeight += weight;
+    }
+    if (totalWeight < 1) {
+      card.style.setProperty('--custom-accent', currentDisplayData.accentColor || '#8d5cff');
+      return;
+    }
+    let r = red / totalWeight;
+    let g = green / totalWeight;
+    let b = blue / totalWeight;
+    const brightnessBoost = Math.max(1, 155 / Math.max(r, g, b));
+    r = Math.min(255, Math.round(r * brightnessBoost));
+    g = Math.min(255, Math.round(g * brightnessBoost));
+    b = Math.min(255, Math.round(b * brightnessBoost));
+    card.style.setProperty('--custom-accent', `rgb(${r} ${g} ${b})`);
+  } catch {
+    card.style.setProperty('--custom-accent', currentDisplayData.accentColor || '#8d5cff');
+  }
+}
+
 function refreshCover(data: NowPlayingData) {
   if (!data.coverUrl || data.coverUrl === previousCoverUrl) return;
   previousCoverUrl = data.coverUrl;
   const nextCover = new Image();
   nextCover.addEventListener('load', () => {
-    if (data.coverUrl === previousCoverUrl) cover.src = data.coverUrl;
+    if (data.coverUrl === previousCoverUrl) {
+      cover.src = data.coverUrl;
+      applyAccentFromCover(nextCover);
+    }
   }, { once: true });
   nextCover.src = data.coverUrl;
 }

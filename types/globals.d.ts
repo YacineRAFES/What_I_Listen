@@ -75,6 +75,20 @@ interface OverlaySettings {
   sammiPassword: string;
   sammiWebhookTrigger: string;
   sammiMessageTemplate: string;
+  showCover: boolean;
+  showAlbum: boolean;
+  showStatus: boolean;
+  showLabel: boolean;
+  textScale: number;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  accentColor: string;
+  autoAccent: boolean;
+  audioIntensity: number;
+  animationSpeed: number;
+  fadeInDuration: number;
+  fadeOutDuration: number;
+  pauseHideDelay: number;
 }
 
 interface NowPlayingData {
@@ -92,6 +106,20 @@ interface NowPlayingData {
   spectrumPalette: SpectrumPalette;
   titleMarquee: boolean;
   language: 'fr' | 'en';
+  showCover: boolean;
+  showAlbum: boolean;
+  showStatus: boolean;
+  showLabel: boolean;
+  textScale: number;
+  backgroundOpacity: number;
+  backgroundBlur: number;
+  accentColor: string;
+  autoAccent: boolean;
+  audioIntensity: number;
+  animationSpeed: number;
+  fadeInDuration: number;
+  fadeOutDuration: number;
+  pauseHideDelay: number;
   error?: string;
 }
 

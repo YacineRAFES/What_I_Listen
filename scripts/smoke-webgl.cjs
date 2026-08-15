@@ -26,13 +26,13 @@ buildSync({
       const bands = Array.from({ length: 64 }, (_, index) => .15 + (index % 5) * .12);
       const groups = [.42, .64, .37, .51, .46, .32];
       const modes = ['tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback'];
-      const rendered = modes.every((mode, index) => visualizer.render(mode, index + .5, .64, bands, groups));
+      const rendered = modes.every((mode, index) => visualizer.render(mode, index + .5, .64, bands, groups, index % 2 ? .25 : 2));
       const gl = canvas.getContext('webgl2');
       const milkDrop = new MilkDropVisualizer(milkDropCanvas);
       milkDrop.resize(520, 130);
       const waveform = new Uint8Array(1024);
       waveform.forEach((_, index) => { waveform[index] = Math.round(128 + Math.sin(index * .12) * 92); });
-      milkDrop.updateWaveform(btoa(String.fromCharCode(...waveform)));
+      milkDrop.updateWaveform(btoa(String.fromCharCode(...waveform)), 2);
       const themes = ['milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid'];
       let milkDropRendered = true;
       for (const theme of themes) {

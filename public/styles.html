@@ -217,6 +217,31 @@
           </div>
         </fieldset>
 
+        <fieldset class="customization-control">
+          <legend data-i18n="styles.commonSettings">Réglages communs</legend>
+          <div class="visibility-grid">
+            <label><input type="checkbox" data-overlay-setting="showCover"><span data-i18n="styles.showCover">Pochette</span></label>
+            <label><input type="checkbox" data-overlay-setting="showAlbum"><span data-i18n="styles.showAlbum">Album</span></label>
+            <label><input type="checkbox" data-overlay-setting="showStatus"><span data-i18n="styles.showStatus">Statut</span></label>
+            <label><input type="checkbox" data-overlay-setting="showLabel"><span data-i18n="styles.showLabel">Label</span></label>
+          </div>
+          <div class="customization-sliders">
+            <label class="range-control"><span data-i18n="styles.textSize">Taille du texte</span><output data-output-for="textScale"></output><input type="range" min="0.75" max="1.5" step="0.05" data-overlay-setting="textScale"></label>
+            <label class="range-control"><span data-i18n="styles.backgroundOpacity">Opacité du fond</span><output data-output-for="backgroundOpacity"></output><input type="range" min="0" max="1" step="0.05" data-overlay-setting="backgroundOpacity"></label>
+            <label class="range-control"><span data-i18n="styles.backgroundBlur">Flou du fond</span><output data-output-for="backgroundBlur"></output><input type="range" min="0" max="30" step="1" data-overlay-setting="backgroundBlur"></label>
+            <div class="accent-control">
+              <label for="accent-color" data-i18n="styles.accentColor">Couleur d’accent</label>
+              <input id="accent-color" type="color" data-overlay-setting="accentColor">
+              <label class="auto-accent"><input type="checkbox" data-overlay-setting="autoAccent"><span data-i18n="styles.autoAccent">Depuis la pochette</span></label>
+            </div>
+            <label class="range-control"><span data-i18n="styles.audioIntensity">Réaction audio</span><output data-output-for="audioIntensity"></output><input type="range" min="0.25" max="2" step="0.05" data-overlay-setting="audioIntensity"></label>
+            <label class="range-control"><span data-i18n="styles.animationSpeed">Vitesse des animations</span><output data-output-for="animationSpeed"></output><input type="range" min="0.25" max="2" step="0.05" data-overlay-setting="animationSpeed"></label>
+            <label class="range-control"><span data-i18n="styles.fadeIn">Fondu d’entrée</span><output data-output-for="fadeInDuration"></output><input type="range" min="0" max="3000" step="50" data-overlay-setting="fadeInDuration"></label>
+            <label class="range-control"><span data-i18n="styles.fadeOut">Fondu de sortie</span><output data-output-for="fadeOutDuration"></output><input type="range" min="0" max="3000" step="50" data-overlay-setting="fadeOutDuration"></label>
+            <label class="range-control"><span data-i18n="styles.pauseHideDelay">Masquage après une pause</span><output data-output-for="pauseHideDelay"></output><input type="range" min="0" max="600" step="5" data-overlay-setting="pauseHideDelay"></label>
+          </div>
+        </fieldset>
+
         <div class="inspector-actions">
           <button id="apply-style" class="primary-action" type="button" data-i18n="styles.apply">Appliquer le style</button>
         </div>

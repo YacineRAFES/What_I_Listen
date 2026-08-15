@@ -28,6 +28,7 @@ precision highp float;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform float uLevel;
+uniform float uSpeed;
 uniform float uBands[64];
 uniform float uGroups[6];
 uniform int uMode;
@@ -210,13 +211,13 @@ void main() {
   else if (uMode == 6) current = fluid(uv * .82);
   else current = feedbackSeed(uv * .72);
 
-  float feedbackRotation = (uGroups[4] - uGroups[2]) * .012 + (uMode == 7 ? .004 : .001);
-  float feedbackZoom = 1.004 + uGroups[0] * .008 + (uMode == 7 ? .006 : 0.0);
+  float feedbackRotation = ((uGroups[4] - uGroups[2]) * .012 + (uMode == 7 ? .004 : .001)) * uSpeed;
+  float feedbackZoom = 1.0 + (.004 + uGroups[0] * .008 + (uMode == 7 ? .006 : 0.0)) * uSpeed;
   vec2 feedbackUv = rotate2d(feedbackRotation) * (screenUv - .5) * feedbackZoom + .5;
   feedbackUv += vec2(noise21(screenUv * 6.0 + uTime) - .5, noise21(screenUv.yx * 7.0 - uTime) - .5) * uGroups[5] * .003;
   vec4 previous = texture(uPrevious, feedbackUv);
   float inside = step(0.0, feedbackUv.x) * step(feedbackUv.x, 1.0) * step(0.0, feedbackUv.y) * step(feedbackUv.y, 1.0);
-  float feedbackAmount = (uMode == 7 ? .88 : .22) * inside;
+  float feedbackAmount = pow(uMode == 7 ? .88 : .22, uSpeed) * inside;
   vec3 color = current + previous.rgb * feedbackAmount;
   color = 1.0 - exp(-color * (1.0 + uLevel * 1.35));
   float alpha = clamp(max(max(color.r, color.g), color.b) * 1.14 + previous.a * feedbackAmount, 0.0, .94);
@@ -326,6 +327,7 @@ export class ReactiveWebGLVisualizer {
           uMode: { value: 0 },
           uPrevious: { value: readTarget.texture },
           uResolution: { value: this.resolution },
+          uSpeed: { value: 1 },
           uTime: { value: 0 },
         },
         vertexShader,
@@ -381,7 +383,7 @@ export class ReactiveWebGLVisualizer {
     this.clearFeedback();
   }
 
-  render(mode: ReactiveWebGLMode, time: number, level: number, bands: readonly number[], groups: readonly number[] = []): boolean {
+  render(mode: ReactiveWebGLMode, time: number, level: number, bands: readonly number[], groups: readonly number[] = [], speed = 1): boolean {
     if (!this.available || this.contextLost || !this.shaderValid || !this.renderer || !this.material || !this.copyMaterial
       || !this.scene || !this.copyScene || !this.camera || !this.readTarget || !this.writeTarget) return false;
     if (mode !== this.lastMode) {
@@ -393,6 +395,7 @@ export class ReactiveWebGLVisualizer {
     this.material.uniforms.uTime!.value = time;
     this.material.uniforms.uLevel!.value = level;
     this.material.uniforms.uMode!.value = modeNumbers[mode];
+    this.material.uniforms.uSpeed!.value = Math.max(.25, Math.min(2, speed));
     this.material.uniforms.uPrevious!.value = this.readTarget.texture;
 
     this.renderer.setRenderTarget(this.writeTarget);

@@ -15,7 +15,31 @@ const spectrumPaletteOptions = [...document.querySelectorAll<HTMLInputElement>('
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const skinOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="skin"]')];
 const skinCards = [...document.querySelectorAll<HTMLElement>('.skin-option')];
+const customizationInputs = [...document.querySelectorAll<HTMLInputElement>('[data-overlay-setting]')];
+const customizationOutputs = [...document.querySelectorAll<HTMLOutputElement>('[data-output-for]')];
 const { t } = window.i18n;
+
+type CustomizationKey = 'showCover' | 'showAlbum' | 'showStatus' | 'showLabel' | 'textScale'
+  | 'backgroundOpacity' | 'backgroundBlur' | 'accentColor' | 'autoAccent' | 'audioIntensity'
+  | 'animationSpeed' | 'fadeInDuration' | 'fadeOutDuration' | 'pauseHideDelay';
+type CustomizationSettings = Pick<OverlaySettings, CustomizationKey>;
+
+const customizationDefaults: CustomizationSettings = {
+  showCover: true,
+  showAlbum: true,
+  showStatus: true,
+  showLabel: true,
+  textScale: 1,
+  backgroundOpacity: .92,
+  backgroundBlur: 0,
+  accentColor: '#8d5cff',
+  autoAccent: false,
+  audioIntensity: 1,
+  animationSpeed: 1,
+  fadeInDuration: 550,
+  fadeOutDuration: 350,
+  pauseHideDelay: 0,
+};
 
 let activeFilter = 'all';
 let pendingNeonPalette: NeonPalette = 'violet-cyan';
@@ -24,6 +48,7 @@ let pendingSpectrumPalette: SpectrumPalette = 'modern';
 let savedNeonPalette: NeonPalette = 'violet-cyan';
 let savedSkin: OverlaySkin = 'luna';
 let savedSpectrumPalette: SpectrumPalette = 'modern';
+let savedCustomization: CustomizationSettings = { ...customizationDefaults };
 let statusKey = 'settings.loading';
 
 function setStatus(key: string) {
@@ -45,12 +70,63 @@ function updateInspectorCopy() {
   selectedStyleDescription.textContent = card?.querySelector('small')?.textContent ?? '';
 }
 
+function customizationInput(key: CustomizationKey): HTMLInputElement {
+  return customizationInputs.find((input) => input.dataset.overlaySetting === key)!;
+}
+
+function readCustomization(): CustomizationSettings {
+  return {
+    showCover: customizationInput('showCover').checked,
+    showAlbum: customizationInput('showAlbum').checked,
+    showStatus: customizationInput('showStatus').checked,
+    showLabel: customizationInput('showLabel').checked,
+    textScale: customizationInput('textScale').valueAsNumber,
+    backgroundOpacity: customizationInput('backgroundOpacity').valueAsNumber,
+    backgroundBlur: customizationInput('backgroundBlur').valueAsNumber,
+    accentColor: customizationInput('accentColor').value,
+    autoAccent: customizationInput('autoAccent').checked,
+    audioIntensity: customizationInput('audioIntensity').valueAsNumber,
+    animationSpeed: customizationInput('animationSpeed').valueAsNumber,
+    fadeInDuration: customizationInput('fadeInDuration').valueAsNumber,
+    fadeOutDuration: customizationInput('fadeOutDuration').valueAsNumber,
+    pauseHideDelay: customizationInput('pauseHideDelay').valueAsNumber,
+  };
+}
+
+function formatCustomizationValue(key: string, value: number): string {
+  if (key === 'textScale' || key === 'audioIntensity' || key === 'animationSpeed') return `${value.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}×`;
+  if (key === 'backgroundOpacity') return `${Math.round(value * 100)} %`;
+  if (key === 'backgroundBlur') return `${Math.round(value)} px`;
+  if (key === 'pauseHideDelay') return value === 0 ? t('styles.never') : `${Math.round(value)} s`;
+  return `${Math.round(value)} ms`;
+}
+
+function refreshCustomizationUi() {
+  customizationOutputs.forEach((output) => {
+    const key = output.dataset.outputFor as CustomizationKey;
+    output.value = formatCustomizationValue(key, customizationInput(key).valueAsNumber);
+  });
+  customizationInput('accentColor').disabled = customizationInput('autoAccent').checked;
+}
+
+function applyCustomization(settings: Partial<CustomizationSettings>) {
+  const customization = { ...customizationDefaults, ...settings };
+  (['showCover', 'showAlbum', 'showStatus', 'showLabel', 'autoAccent'] as const).forEach((key) => {
+    customizationInput(key).checked = customization[key];
+  });
+  (['textScale', 'backgroundOpacity', 'backgroundBlur', 'accentColor', 'audioIntensity', 'animationSpeed', 'fadeInDuration', 'fadeOutDuration', 'pauseHideDelay'] as const).forEach((key) => {
+    customizationInput(key).value = String(customization[key]);
+  });
+  refreshCustomizationUi();
+}
+
 function previewSelection() {
   livePreviewFrame.contentWindow?.postMessage({
     type: 'what-i-listen:preview-style',
     skin: pendingSkin,
     neonPalette: pendingNeonPalette,
     spectrumPalette: pendingSpectrumPalette,
+    ...readCustomization(),
   }, window.location.origin);
 }
 
@@ -80,6 +156,7 @@ function setControlsDisabled(disabled: boolean) {
   skinOptions.forEach((option) => { option.disabled = disabled; });
   neonPaletteOptions.forEach((option) => { option.disabled = disabled; });
   spectrumPaletteOptions.forEach((option) => { option.disabled = disabled; });
+  customizationInputs.forEach((input) => { input.disabled = disabled || (input.dataset.overlaySetting === 'accentColor' && customizationInput('autoAccent').checked); });
 }
 
 function resizeLivePreview() {
@@ -120,14 +197,17 @@ async function applySelection(): Promise<boolean> {
       skin: pendingSkin,
       neonPalette: pendingNeonPalette,
       spectrumPalette: pendingSpectrumPalette,
+      ...readCustomization(),
     });
     savedSkin = settings.skin;
     savedNeonPalette = settings.neonPalette;
     savedSpectrumPalette = settings.spectrumPalette;
+    savedCustomization = Object.fromEntries((Object.keys(customizationDefaults) as CustomizationKey[]).map((key) => [key, settings[key]])) as CustomizationSettings;
     pendingNeonPalette = savedNeonPalette;
     pendingSpectrumPalette = savedSpectrumPalette;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    applyCustomization(savedCustomization);
     clearPreviewSelection();
     setStatus('settings.skinSaved');
     return true;
@@ -136,6 +216,7 @@ async function applySelection(): Promise<boolean> {
     pendingSpectrumPalette = savedSpectrumPalette;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    applyCustomization(savedCustomization);
     selectSkin(savedSkin);
     setStatus('settings.saveError');
     return false;
@@ -153,10 +234,12 @@ async function load() {
     savedSkin = settings.skin || 'luna';
     savedNeonPalette = settings.neonPalette || 'violet-cyan';
     savedSpectrumPalette = settings.spectrumPalette || 'modern';
+    savedCustomization = { ...customizationDefaults, ...Object.fromEntries((Object.keys(customizationDefaults) as CustomizationKey[]).map((key) => [key, settings[key]])) };
     pendingNeonPalette = savedNeonPalette;
     pendingSpectrumPalette = savedSpectrumPalette;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    applyCustomization(savedCustomization);
     selectSkin(savedSkin);
     serviceStatus.classList.remove('offline');
     setStatus('styles.loaded');
@@ -189,6 +272,12 @@ spectrumPaletteOptions.forEach((option) => option.addEventListener('change', () 
   setStatus('styles.readyToApply');
 }));
 
+customizationInputs.forEach((input) => input.addEventListener('input', () => {
+  refreshCustomizationUi();
+  previewSelection();
+  setStatus('styles.readyToApply');
+}));
+
 filterButtons.forEach((button) => button.addEventListener('click', () => {
   activeFilter = button.dataset.filter ?? 'all';
   filterButtons.forEach((candidate) => {
@@ -206,6 +295,7 @@ livePreviewFrame.addEventListener('load', previewSelection);
 document.addEventListener('app-language-change', () => {
   updateInspectorCopy();
   filterStyles();
+  refreshCustomizationUi();
   setStatus(statusKey);
 });
 

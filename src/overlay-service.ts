@@ -25,6 +25,20 @@ const defaultSettings = Object.freeze({
   sammiPassword: '',
   sammiWebhookTrigger: 'what_i_listen_track_changed',
   sammiMessageTemplate: '🎵 En écoute : {artist} — {title}',
+  showCover: true,
+  showAlbum: true,
+  showStatus: true,
+  showLabel: true,
+  textScale: 1,
+  backgroundOpacity: .92,
+  backgroundBlur: 0,
+  accentColor: '#8d5cff',
+  autoAccent: false,
+  audioIntensity: 1,
+  animationSpeed: 1,
+  fadeInDuration: 550,
+  fadeOutDuration: 350,
+  pauseHideDelay: 0,
 } satisfies OverlaySettings);
 const visualizerForSkin: Readonly<Record<ConcreteOverlaySkin, VisualizerMode>> = Object.freeze({
   luna: 'bars',
@@ -196,6 +210,16 @@ function normalizeAppTheme(value: unknown): AppTheme {
   return typeof value === 'string' && appThemes.has(value) ? value as AppTheme : defaultSettings.appTheme;
 }
 
+function normalizeBoundedNumber(value: unknown, minimum: number, maximum: number, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(maximum, Math.max(minimum, value))
+    : fallback;
+}
+
+function normalizeAccentColor(value: unknown): string {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : defaultSettings.accentColor;
+}
+
 function normalizeSammiPassword(value: unknown): string {
   return typeof value === 'string' ? value.slice(0, 256) : defaultSettings.sammiPassword;
 }
@@ -252,6 +276,20 @@ async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
       sammiPassword: normalizeSammiPassword(settings.sammiPassword),
       sammiWebhookTrigger: normalizeSammiWebhookTrigger(settings.sammiWebhookTrigger),
       sammiMessageTemplate: normalizeSammiMessageTemplate(settings.sammiMessageTemplate),
+      showCover: typeof settings.showCover === 'boolean' ? settings.showCover : defaultSettings.showCover,
+      showAlbum: typeof settings.showAlbum === 'boolean' ? settings.showAlbum : defaultSettings.showAlbum,
+      showStatus: typeof settings.showStatus === 'boolean' ? settings.showStatus : defaultSettings.showStatus,
+      showLabel: typeof settings.showLabel === 'boolean' ? settings.showLabel : defaultSettings.showLabel,
+      textScale: normalizeBoundedNumber(settings.textScale, .75, 1.5, defaultSettings.textScale),
+      backgroundOpacity: normalizeBoundedNumber(settings.backgroundOpacity, 0, 1, defaultSettings.backgroundOpacity),
+      backgroundBlur: normalizeBoundedNumber(settings.backgroundBlur, 0, 30, defaultSettings.backgroundBlur),
+      accentColor: normalizeAccentColor(settings.accentColor),
+      autoAccent: typeof settings.autoAccent === 'boolean' ? settings.autoAccent : defaultSettings.autoAccent,
+      audioIntensity: normalizeBoundedNumber(settings.audioIntensity, .25, 2, defaultSettings.audioIntensity),
+      animationSpeed: normalizeBoundedNumber(settings.animationSpeed, .25, 2, defaultSettings.animationSpeed),
+      fadeInDuration: normalizeBoundedNumber(settings.fadeInDuration, 0, 3000, defaultSettings.fadeInDuration),
+      fadeOutDuration: normalizeBoundedNumber(settings.fadeOutDuration, 0, 3000, defaultSettings.fadeOutDuration),
+      pauseHideDelay: normalizeBoundedNumber(settings.pauseHideDelay, 0, 600, defaultSettings.pauseHideDelay),
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn(`Paramètres du visualiseur ignorés : ${errorMessage(error)}`);
@@ -317,6 +355,20 @@ export async function startOverlayService({
     sammiPassword: savedSettings.sammiPassword,
     sammiWebhookTrigger: savedSettings.sammiWebhookTrigger,
     sammiMessageTemplate: savedSettings.sammiMessageTemplate,
+    showCover: savedSettings.showCover,
+    showAlbum: savedSettings.showAlbum,
+    showStatus: savedSettings.showStatus,
+    showLabel: savedSettings.showLabel,
+    textScale: savedSettings.textScale,
+    backgroundOpacity: savedSettings.backgroundOpacity,
+    backgroundBlur: savedSettings.backgroundBlur,
+    accentColor: savedSettings.accentColor,
+    autoAccent: savedSettings.autoAccent,
+    audioIntensity: savedSettings.audioIntensity,
+    animationSpeed: savedSettings.animationSpeed,
+    fadeInDuration: savedSettings.fadeInDuration,
+    fadeOutDuration: savedSettings.fadeOutDuration,
+    pauseHideDelay: savedSettings.pauseHideDelay,
     audio: {
       active: false,
       bands: Array(audioBandCount).fill(0),
@@ -610,6 +662,20 @@ export async function startOverlayService({
       spectrumPalette: state.spectrumPalette,
       titleMarquee: state.titleMarquee,
       language: state.language,
+      showCover: state.showCover,
+      showAlbum: state.showAlbum,
+      showStatus: state.showStatus,
+      showLabel: state.showLabel,
+      textScale: state.textScale,
+      backgroundOpacity: state.backgroundOpacity,
+      backgroundBlur: state.backgroundBlur,
+      accentColor: state.accentColor,
+      autoAccent: state.autoAccent,
+      audioIntensity: state.audioIntensity,
+      animationSpeed: state.animationSpeed,
+      fadeInDuration: state.fadeInDuration,
+      fadeOutDuration: state.fadeOutDuration,
+      pauseHideDelay: state.pauseHideDelay,
       coverUrl: `/cover/${state.version}`,
     };
   }
@@ -629,6 +695,20 @@ export async function startOverlayService({
       sammiPassword: state.sammiPassword,
       sammiWebhookTrigger: state.sammiWebhookTrigger,
       sammiMessageTemplate: state.sammiMessageTemplate,
+      showCover: state.showCover,
+      showAlbum: state.showAlbum,
+      showStatus: state.showStatus,
+      showLabel: state.showLabel,
+      textScale: state.textScale,
+      backgroundOpacity: state.backgroundOpacity,
+      backgroundBlur: state.backgroundBlur,
+      accentColor: state.accentColor,
+      autoAccent: state.autoAccent,
+      audioIntensity: state.audioIntensity,
+      animationSpeed: state.animationSpeed,
+      fadeInDuration: state.fadeInDuration,
+      fadeOutDuration: state.fadeOutDuration,
+      pauseHideDelay: state.pauseHideDelay,
     };
   }
 
@@ -793,7 +873,13 @@ export async function startOverlayService({
         const updatesSammiPassword = Object.hasOwn(payload, 'sammiPassword');
         const updatesSammiWebhookTrigger = Object.hasOwn(payload, 'sammiWebhookTrigger');
         const updatesSammiMessageTemplate = Object.hasOwn(payload, 'sammiMessageTemplate');
-        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId && !updatesSammiEnabled && !updatesSammiPort && !updatesSammiPassword && !updatesSammiWebhookTrigger && !updatesSammiMessageTemplate) throw new Error('Aucun paramètre à enregistrer.');
+        const customizationKeys = [
+          'showCover', 'showAlbum', 'showStatus', 'showLabel', 'textScale', 'backgroundOpacity',
+          'backgroundBlur', 'accentColor', 'autoAccent', 'audioIntensity', 'animationSpeed',
+          'fadeInDuration', 'fadeOutDuration', 'pauseHideDelay',
+        ] as const;
+        const updatesCustomization = customizationKeys.some((key) => Object.hasOwn(payload, key));
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId && !updatesSammiEnabled && !updatesSammiPort && !updatesSammiPassword && !updatesSammiWebhookTrigger && !updatesSammiMessageTemplate && !updatesCustomization) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
         if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
@@ -807,6 +893,18 @@ export async function startOverlayService({
         if (updatesSammiPassword && (typeof payload.sammiPassword !== 'string' || payload.sammiPassword.length > 256)) throw new Error('Mot de passe SAMMI invalide.');
         if (updatesSammiWebhookTrigger && (typeof payload.sammiWebhookTrigger !== 'string' || !payload.sammiWebhookTrigger.trim() || payload.sammiWebhookTrigger.length > 100)) throw new Error('Nom du webhook SAMMI invalide.');
         if (updatesSammiMessageTemplate && (typeof payload.sammiMessageTemplate !== 'string' || !payload.sammiMessageTemplate.trim() || payload.sammiMessageTemplate.length > 500)) throw new Error('Modèle de message SAMMI invalide.');
+        for (const key of ['showCover', 'showAlbum', 'showStatus', 'showLabel', 'autoAccent'] as const) {
+          if (Object.hasOwn(payload, key) && typeof payload[key] !== 'boolean') throw new Error('Option d’affichage invalide.');
+        }
+        const numericCustomization = [
+          ['textScale', .75, 1.5], ['backgroundOpacity', 0, 1], ['backgroundBlur', 0, 30],
+          ['audioIntensity', .25, 2], ['animationSpeed', .25, 2], ['fadeInDuration', 0, 3000],
+          ['fadeOutDuration', 0, 3000], ['pauseHideDelay', 0, 600],
+        ] as const;
+        for (const [key, minimum, maximum] of numericCustomization) {
+          if (Object.hasOwn(payload, key) && (typeof payload[key] !== 'number' || !Number.isFinite(payload[key]) || payload[key] < minimum || payload[key] > maximum)) throw new Error('Valeur de personnalisation invalide.');
+        }
+        if (Object.hasOwn(payload, 'accentColor') && (typeof payload.accentColor !== 'string' || !/^#[0-9a-f]{6}$/i.test(payload.accentColor))) throw new Error('Couleur d’accent invalide.');
         if (typeof payload.startHidden === 'boolean') state.startHidden = payload.startHidden;
         if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
         if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
@@ -819,6 +917,20 @@ export async function startOverlayService({
         if (typeof payload.sammiPassword === 'string') state.sammiPassword = normalizeSammiPassword(payload.sammiPassword);
         if (typeof payload.sammiWebhookTrigger === 'string') state.sammiWebhookTrigger = normalizeSammiWebhookTrigger(payload.sammiWebhookTrigger);
         if (typeof payload.sammiMessageTemplate === 'string') state.sammiMessageTemplate = normalizeSammiMessageTemplate(payload.sammiMessageTemplate);
+        if (typeof payload.showCover === 'boolean') state.showCover = payload.showCover;
+        if (typeof payload.showAlbum === 'boolean') state.showAlbum = payload.showAlbum;
+        if (typeof payload.showStatus === 'boolean') state.showStatus = payload.showStatus;
+        if (typeof payload.showLabel === 'boolean') state.showLabel = payload.showLabel;
+        if (typeof payload.autoAccent === 'boolean') state.autoAccent = payload.autoAccent;
+        if (typeof payload.textScale === 'number') state.textScale = normalizeBoundedNumber(payload.textScale, .75, 1.5, defaultSettings.textScale);
+        if (typeof payload.backgroundOpacity === 'number') state.backgroundOpacity = normalizeBoundedNumber(payload.backgroundOpacity, 0, 1, defaultSettings.backgroundOpacity);
+        if (typeof payload.backgroundBlur === 'number') state.backgroundBlur = normalizeBoundedNumber(payload.backgroundBlur, 0, 30, defaultSettings.backgroundBlur);
+        if (typeof payload.accentColor === 'string') state.accentColor = normalizeAccentColor(payload.accentColor);
+        if (typeof payload.audioIntensity === 'number') state.audioIntensity = normalizeBoundedNumber(payload.audioIntensity, .25, 2, defaultSettings.audioIntensity);
+        if (typeof payload.animationSpeed === 'number') state.animationSpeed = normalizeBoundedNumber(payload.animationSpeed, .25, 2, defaultSettings.animationSpeed);
+        if (typeof payload.fadeInDuration === 'number') state.fadeInDuration = normalizeBoundedNumber(payload.fadeInDuration, 0, 3000, defaultSettings.fadeInDuration);
+        if (typeof payload.fadeOutDuration === 'number') state.fadeOutDuration = normalizeBoundedNumber(payload.fadeOutDuration, 0, 3000, defaultSettings.fadeOutDuration);
+        if (typeof payload.pauseHideDelay === 'number') state.pauseHideDelay = normalizeBoundedNumber(payload.pauseHideDelay, 0, 600, defaultSettings.pauseHideDelay);
         if (updatesSammiEnabled || updatesSammiPort || updatesSammiPassword) sammiDiagnosticExpiresAt = 0;
         if (typeof payload.skin === 'string') {
           state.skin = payload.skin as OverlaySkin;
