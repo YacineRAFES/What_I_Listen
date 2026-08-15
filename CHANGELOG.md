@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.10.1...v0.11.0) (2026-08-15)
+
+### Features
+
+* **diagnostic:** ajoute la checklist avant stream ([0280989](https://github.com/YacineRAFES/What_I_Listen/commit/0280989decd48f36d25d572741cc988326250483))
+* **integrations:** déplacer SAMMI dans un menu dédié ([9af119d](https://github.com/YacineRAFES/What_I_Listen/commit/9af119d60bd3a9b41db81817817dd3d5dacac4d1))
+* **overlay:** ajouter la personnalisation avancée des thèmes ([4c39fba](https://github.com/YacineRAFES/What_I_Listen/commit/4c39fba4faa151f30dc15a9371d437d8a29f8222))
+
+### Bug Fixes
+
+* **styles:** prévisualiser la sélection temporaire ([e8562b6](https://github.com/YacineRAFES/What_I_Listen/commit/e8562b6c5977bf6a716478350f82bf286bc9684b))
+
 ## [0.10.1](https://github.com/YacineRAFES/What_I_Listen/compare/v0.10.0...v0.10.1) (2026-08-14)
 
 ### Bug Fixes
