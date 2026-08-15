@@ -136,7 +136,9 @@ function render(data: NowPlayingData) {
     artist.textContent = t('app.track.prompt');
     album.textContent = '';
   } else {
-    playback.textContent = data.playback === 'playing' ? t('app.track.playing') : t('app.track.paused');
+    playback.textContent = data.playback === 'playing'
+      ? t(data.testMode ? 'app.track.testPlaying' : 'app.track.playing')
+      : t(data.testMode ? 'app.track.testPaused' : 'app.track.paused');
     title.textContent = data.title || t('app.track.unknownTitle');
     artist.textContent = data.artist || t('app.track.unknownArtist');
     album.textContent = data.album || '';

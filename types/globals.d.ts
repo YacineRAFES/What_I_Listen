@@ -93,6 +93,7 @@ interface OverlaySettings {
 
 interface NowPlayingData {
   available: boolean;
+  testMode: boolean;
   title: string;
   artist: string;
   album: string;
@@ -121,6 +122,20 @@ interface NowPlayingData {
   fadeOutDuration: number;
   pauseHideDelay: number;
   error?: string;
+}
+
+type TestPlayback = 'playing' | 'paused';
+type TestCover = 'sample' | 'missing';
+
+interface TestModeData {
+  active: boolean;
+  title: string;
+  artist: string;
+  album: string;
+  source: string;
+  playback: TestPlayback;
+  cover: TestCover;
+  bass: number;
 }
 
 interface I18nApi {

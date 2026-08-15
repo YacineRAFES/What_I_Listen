@@ -532,7 +532,9 @@ function update(data: NowPlayingData) {
   setTitle(data.title || t('overlay.unknownTitle'));
   artist.textContent = data.artist || t('overlay.unknownArtist');
   album.textContent = data.album || '';
-  status.textContent = data.playback === 'playing' ? t('overlay.playing') : t('overlay.paused');
+  status.textContent = data.playback === 'playing'
+    ? t(data.testMode ? 'overlay.testPlaying' : 'overlay.playing')
+    : t(data.testMode ? 'overlay.testPaused' : 'overlay.paused');
   card.classList.toggle('paused', data.playback !== 'playing');
   card.dataset.visualizer = data.visualizer || 'bars';
 

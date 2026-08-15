@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title data-i18n="test.title">Mode test — What I Listen</title>
+    <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/test.css">
+  </head>
+  <body class="app-layout test-page">
+    <header class="window-titlebar">
+      <div class="window-brand" aria-label="What I Listen"><img src="/app-icon.svg" alt="" aria-hidden="true"><span>What I Listen</span></div>
+    </header>
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app"><span class="sidebar-icon" aria-hidden="true">⌂</span><span data-i18n="nav.home">Accueil</span></a>
+        <a href="/styles"><span class="sidebar-icon" aria-hidden="true">◈</span><span data-i18n="nav.styles">Styles</span></a>
+        <a class="active" href="/test"><span class="sidebar-icon" aria-hidden="true">▶</span><span data-i18n="nav.test">Mode test</span></a>
+        <a href="/integrations"><span class="sidebar-icon" aria-hidden="true">⌘</span><span data-i18n="nav.integrations">Intégrations avancées</span></a>
+        <a href="/settings"><span class="sidebar-icon" aria-hidden="true">⚙</span><span data-i18n="nav.settings">Paramètres</span></a>
+      </nav>
+      <div class="sidebar-meta"><span data-i18n="app.versionLabel">Version</span><strong data-app-version>—</strong></div>
+    </aside>
+
+    <main class="app-shell test-shell">
+      <header class="page-toolbar">
+        <div>
+          <p class="workspace-eyebrow" data-i18n="test.eyebrow">PRÉPARATION OBS</p>
+          <h1 data-i18n="test.heading">Mode test complet</h1>
+          <p class="page-intro" data-i18n="test.intro">Simule un morceau et sa réaction audio sans lancer Deezer.</p>
+        </div>
+        <span id="test-status-badge" class="test-status off" data-i18n="test.status.off">Test arrêté</span>
+      </header>
+
+      <section class="test-activation" aria-labelledby="test-activation-title">
+        <div>
+          <h2 id="test-activation-title" data-i18n="test.activation.title">Envoyer la simulation vers OBS</h2>
+          <p data-i18n="test.activation.description">Le mode test remplace temporairement Deezer dans l’overlay. Les données réelles reviennent dès son arrêt.</p>
+        </div>
+        <button id="test-toggle" class="test-toggle" type="button" aria-pressed="false" data-i18n="test.activation.start">Démarrer le test</button>
+      </section>
+
+      <div class="test-grid">
+        <div class="test-controls">
+          <section class="test-panel preset-panel">
+            <div class="test-panel-heading"><div><p class="workspace-eyebrow" data-i18n="test.presets.eyebrow">SCÉNARIOS RAPIDES</p><h2 data-i18n="test.presets.title">Tester les cas difficiles</h2></div></div>
+            <div class="preset-grid">
+              <button type="button" data-preset="long-title"><span aria-hidden="true">Aa</span><strong data-i18n="test.preset.longTitle">Titre très long</strong></button>
+              <button type="button" data-preset="missing-cover"><span aria-hidden="true">▧</span><strong data-i18n="test.preset.missingCover">Sans pochette</strong></button>
+              <button type="button" data-preset="weak-bass"><span aria-hidden="true">⌁</span><strong data-i18n="test.preset.weakBass">Basses faibles</strong></button>
+              <button type="button" data-preset="strong-bass"><span aria-hidden="true">≋</span><strong data-i18n="test.preset.strongBass">Basses fortes</strong></button>
+            </div>
+          </section>
+
+          <section class="test-panel transport-panel">
+            <div class="test-panel-heading"><div><p class="workspace-eyebrow" data-i18n="test.transport.eyebrow">LECTURE</p><h2 data-i18n="test.transport.title">Commandes du morceau</h2></div></div>
+            <div class="transport-controls" role="group" data-i18n-aria-label="test.transport.label" aria-label="Commandes de lecture">
+              <button id="test-play" type="button"><span aria-hidden="true">▶</span><span data-i18n="test.transport.play">Lecture</span></button>
+              <button id="test-pause" type="button"><span aria-hidden="true">Ⅱ</span><span data-i18n="test.transport.pause">Pause</span></button>
+              <button id="test-next" type="button"><span aria-hidden="true">▶|</span><span data-i18n="test.transport.next">Titre suivant</span></button>
+            </div>
+          </section>
+
+          <section class="test-panel metadata-panel">
+            <div class="test-panel-heading"><div><p class="workspace-eyebrow" data-i18n="test.custom.eyebrow">DONNÉES PERSONNALISÉES</p><h2 data-i18n="test.custom.title">Métadonnées du morceau</h2></div></div>
+            <form id="test-form">
+              <label><span data-i18n="test.field.title">Titre</span><input id="test-title" name="title" maxlength="300" required></label>
+              <div class="field-row">
+                <label><span data-i18n="test.field.artist">Artiste</span><input id="test-artist" name="artist" maxlength="300"></label>
+                <label><span data-i18n="test.field.album">Album</span><input id="test-album" name="album" maxlength="300"></label>
+              </div>
+              <label><span data-i18n="test.field.source">Source affichée</span><input id="test-source" name="source" maxlength="300"></label>
+              <fieldset class="cover-choice">
+                <legend data-i18n="test.field.cover">Pochette</legend>
+                <label><input type="radio" name="cover" value="sample"><span data-i18n="test.cover.sample">Pochette de démonstration</span></label>
+                <label><input type="radio" name="cover" value="missing"><span data-i18n="test.cover.missing">Pochette absente</span></label>
+              </fieldset>
+              <label class="bass-control" for="test-bass">
+                <span><span data-i18n="test.field.bass">Intensité des basses</span><output id="test-bass-value">55 %</output></span>
+                <input id="test-bass" type="range" min="0" max="100" step="1" value="55">
+                <small><span data-i18n="test.bass.low">Faibles</span><span data-i18n="test.bass.high">Fortes</span></small>
+              </label>
+              <button class="apply-test" type="submit" data-i18n="test.apply">Appliquer et démarrer</button>
+            </form>
+          </section>
+        </div>
+
+        <aside class="test-preview-column">
+          <section class="test-panel test-preview-panel">
+            <div class="test-panel-heading"><div><p class="workspace-eyebrow" data-i18n="styles.livePreviewEyebrow">RENDU OBS</p><h2 data-i18n="styles.livePreview">Aperçu en direct</h2></div><span class="live-preview-badge"><i></i>LIVE</span></div>
+            <div id="test-preview-viewport" class="test-preview-viewport"><iframe id="test-preview-frame" src="/?debug&amp;preview&amp;embedded" tabindex="-1" data-i18n-title="styles.livePreviewFrameTitle" title="Aperçu en direct de l’overlay OBS"></iframe></div>
+            <p class="test-preview-hint" data-i18n="test.preview.hint">Cet aperçu est identique à la source Navigateur OBS en 520 × 130.</p>
+          </section>
+          <section class="test-panel active-summary" aria-live="polite">
+            <p class="workspace-eyebrow" data-i18n="test.summary.eyebrow">SIMULATION ACTUELLE</p>
+            <div class="summary-state"><span id="summary-playback">▶</span><div><strong id="summary-title">—</strong><small id="summary-details">—</small></div></div>
+            <p id="test-message" class="test-message" role="status"></p>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/shell.js"></script>
+    <script type="module" src="/test.js"></script>
+  </body>
+</html>

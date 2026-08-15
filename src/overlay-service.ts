@@ -185,6 +185,17 @@ function normalizeSkin(value: unknown): OverlaySkin {
   return typeof value === 'string' && overlaySkins.has(value as OverlaySkin) ? value as OverlaySkin : defaultSettings.skin;
 }
 
+interface TestModeState {
+  active: boolean;
+  title: string;
+  artist: string;
+  album: string;
+  source: string;
+  playback: 'playing' | 'paused';
+  cover: 'sample' | 'missing';
+  bass: number;
+}
+
 function chooseRandomVisualSkin(previous?: ConcreteOverlaySkin): ConcreteOverlaySkin {
   const choices = randomVisualSkins.filter((skin) => skin !== previous);
   return choices[Math.floor(Math.random() * choices.length)] ?? randomVisualSkins[0]!;
@@ -381,6 +392,16 @@ export async function startOverlayService({
     version: 0,
     error: '',
   };
+  const testMode: TestModeState = {
+    active: false,
+    title: 'Midnight Frequencies',
+    artist: 'What I Listen',
+    album: 'OBS Test Session',
+    source: 'Mode test',
+    playback: 'playing',
+    cover: 'sample',
+    bass: .55,
+  };
 
   const manager = createSessionManager(backendPath ? { backendPath } : undefined);
   const audioSubscribers = new Set<ServerResponse>();
@@ -398,6 +419,7 @@ export async function startOverlayService({
   let sammiDiagnosticExpiresAt = 0;
   let audioSignalMeasuredAt = 0;
   let randomSkinTimer: ReturnType<typeof setTimeout> | undefined;
+  let testAudioTimer: ReturnType<typeof setInterval> | undefined;
   const pendingMetadataRefreshes = new Set<ReturnType<typeof setTimeout>>();
   const activeMetadataRefreshManagers = new Set<ReturnType<typeof createSessionManager>>();
   const settingsListeners = new Set<(settings: OverlaySettings) => void>();
@@ -508,7 +530,8 @@ export async function startOverlayService({
   }
 
   function syncRandomSkinTimer(restart = false): void {
-    const eligible = state.skin === 'random' && state.available && state.playback === 'playing';
+    const eligible = state.skin === 'random'
+      && (testMode.active ? testMode.playback === 'playing' : state.available && state.playback === 'playing');
     if (restart || !eligible) clearRandomSkinTimer();
     if (!eligible || randomSkinTimer) return;
 
@@ -623,7 +646,7 @@ export async function startOverlayService({
       sammiTrackKey = nextSammiTrackKey;
     } else if (next.available && nextSammiTrackKey !== sammiTrackKey) {
       sammiTrackKey = nextSammiTrackKey;
-      if (state.sammiEnabled) {
+      if (state.sammiEnabled && !testMode.active) {
         queueSammiTrackChange({
           title: next.title,
           artist: next.artist,
@@ -647,14 +670,24 @@ export async function startOverlayService({
   }
 
   function stateForClient(): NowPlayingData {
+    const track = testMode.active ? {
+      available: true,
+      title: testMode.title,
+      artist: testMode.artist,
+      album: testMode.album,
+      playback: testMode.playback,
+      source: testMode.source,
+      error: '',
+    } : state;
     return {
-      available: state.available,
-      title: state.title,
-      artist: state.artist,
-      album: state.album,
-      playback: state.playback,
-      source: state.source,
-      error: state.error || undefined,
+      available: track.available,
+      testMode: testMode.active,
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      playback: track.playback,
+      source: track.source,
+      error: track.error || undefined,
       version: state.version,
       visualizer: state.visualizer,
       skin: state.effectiveSkin,
@@ -713,6 +746,7 @@ export async function startOverlayService({
   }
 
   function audioForClient() {
+    if (testMode.active) return testAudioForClient();
     return {
       active: state.audio.active,
       bands: state.audio.bands,
@@ -724,19 +758,67 @@ export async function startOverlayService({
     };
   }
 
+  function testModeForClient(): TestModeState {
+    return { ...testMode };
+  }
+
+  function testAudioForClient() {
+    const playing = testMode.playback === 'playing';
+    const bass = playing ? testMode.bass : 0;
+    const phase = Date.now() / 145;
+    const bands = Array.from({ length: audioBandCount }, (_, index) => {
+      const lowFrequencyWeight = Math.exp(-index / 13);
+      const musicalRipple = .62 + .25 * Math.sin(phase + index * .71) + .13 * Math.sin(phase * .41 + index * .19);
+      const upperEnergy = bass * .2 * Math.exp(-Math.abs(index - 28) / 22);
+      return Math.min(1, Math.max(0, bass * lowFrequencyWeight * musicalRipple + upperEnergy));
+    });
+    const groups = Array.from({ length: audioGroupCount }, (_, index) => {
+      const weight = index === 0 ? 1 : index === 1 ? .82 : Math.max(.18, .58 - index * .07);
+      return Math.min(1, Math.max(0, bass * weight * (.78 + .18 * Math.sin(phase * .83 + index))));
+    });
+    const waveformBytes = Buffer.alloc(1024, 128);
+    if (playing) {
+      for (let index = 0; index < waveformBytes.length; index += 1) {
+        const sample = Math.sin(index * .075 + phase) * .72 + Math.sin(index * .19 + phase * .43) * .28;
+        waveformBytes[index] = Math.round(128 + sample * bass * 112);
+      }
+    }
+    return {
+      active: true,
+      bands,
+      groups,
+      level: playing ? Math.min(1, bass * (.7 + .15 * Math.sin(phase * .73))) : 0,
+      waveform: waveformBytes.toString('base64'),
+      updatedAt: Date.now(),
+    };
+  }
+
+  function syncTestAudioTimer(): void {
+    if (testAudioTimer) clearInterval(testAudioTimer);
+    testAudioTimer = undefined;
+    if (!testMode.active) {
+      notifyAudioSubscribers();
+      return;
+    }
+    notifyAudioSubscribers();
+    testAudioTimer = setInterval(notifyAudioSubscribers, 100);
+  }
+
   async function diagnosticsForClient(): Promise<StreamDiagnosticData> {
-    const audioDeviceAvailable = state.audio.active
-      && Date.now() - state.audio.updatedAt <= audioFreshnessMs;
+    const currentAudio = audioForClient();
+    const currentTrack = stateForClient();
+    const audioDeviceAvailable = testMode.active || (state.audio.active
+      && Date.now() - state.audio.updatedAt <= audioFreshnessMs);
     const sammi = await probeSammi();
     return {
-      deezerDetected: Boolean(state.source) && !state.error,
-      trackReceived: state.available && !state.error,
+      deezerDetected: testMode.active || (Boolean(state.source) && !state.error),
+      trackReceived: currentTrack.available && !currentTrack.error,
       audioDeviceAvailable,
       audioSignalMeasured: audioDeviceAvailable
-        && Date.now() - audioSignalMeasuredAt <= audioSignalHoldMs,
-      audioLevel: state.audio.level,
-      audioUpdatedAt: state.audio.updatedAt,
-      audioError: state.audio.error || undefined,
+        && (testMode.active ? testMode.playback === 'playing' && testMode.bass >= audioSignalThreshold : Date.now() - audioSignalMeasuredAt <= audioSignalHoldMs),
+      audioLevel: currentAudio.level,
+      audioUpdatedAt: currentAudio.updatedAt,
+      audioError: testMode.active ? undefined : state.audio.error || undefined,
       overlayAccessible: isListening && !closing,
       sammiEnabled: state.sammiEnabled,
       ...sammi,
@@ -791,9 +873,10 @@ export async function startOverlayService({
   }
 
   function svgPlaceholder(): string {
-    const initial = (state.title || state.artist || '♫').trim().slice(0, 1).toUpperCase();
+    const currentTrack = stateForClient();
+    const initial = (currentTrack.title || currentTrack.artist || '♫').trim().slice(0, 1).toUpperCase();
     const safeInitial = escapeXml(initial);
-    const safeArtist = escapeXml((state.artist || 'Deezer').slice(0, 35));
+    const safeArtist = escapeXml((currentTrack.artist || 'Deezer').slice(0, 35));
     return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9d4edd"/><stop offset="1" stop-color="#2d1157"/></linearGradient></defs>
@@ -801,6 +884,16 @@ export async function startOverlayService({
   <circle cx="256" cy="235" r="124" fill="#ffffff" fill-opacity=".14"/>
   <text x="256" y="278" fill="white" font-family="Segoe UI, sans-serif" font-size="180" font-weight="700" text-anchor="middle">${safeInitial}</text>
   <text x="256" y="420" fill="white" fill-opacity=".75" font-family="Segoe UI, sans-serif" font-size="28" text-anchor="middle">${safeArtist}</text>
+</svg>`;
+  }
+
+  function svgTestCover(): string {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs><radialGradient id="g"><stop stop-color="#36d8ff"/><stop offset=".48" stop-color="#6048ef"/><stop offset="1" stop-color="#12072d"/></radialGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/><circle cx="256" cy="256" r="166" fill="none" stroke="white" stroke-opacity=".24" stroke-width="18"/>
+  <circle cx="256" cy="256" r="62" fill="#071321" stroke="white" stroke-opacity=".7" stroke-width="8"/><circle cx="256" cy="256" r="13" fill="#58e3ff"/>
+  <text x="256" y="464" fill="white" font-family="Segoe UI, sans-serif" font-size="28" font-weight="700" text-anchor="middle">OBS TEST</text>
 </svg>`;
   }
 
@@ -821,6 +914,10 @@ export async function startOverlayService({
   }
 
   function sendCover(response: ServerResponse): void {
+    if (testMode.active) {
+      send(response, 200, 'image/svg+xml; charset=utf-8', testMode.cover === 'sample' ? svgTestCover() : svgPlaceholder());
+      return;
+    }
     const match = /^data:(image\/(?:avif|jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/i.exec(state.thumbnail);
     if (match && match[2]!.length <= maxCoverBase64Length) {
       send(response, 200, match[1]!, Buffer.from(match[2]!, 'base64'));
@@ -849,6 +946,44 @@ export async function startOverlayService({
       url = new URL(request.url ?? '/', serviceOrigin);
     } catch {
       send(response, 400, 'text/plain; charset=utf-8', 'URL invalide.');
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/test-mode') {
+      const origin = requestHeader(request, 'origin');
+      const contentType = requestHeader(request, 'content-type').split(';', 1)[0]?.trim().toLowerCase();
+      if ((origin && origin !== serviceOrigin) || contentType !== 'application/json') {
+        send(response, 403, 'text/plain; charset=utf-8', 'Origine ou type de requête non autorisé.');
+        return;
+      }
+      try {
+        const payload = await readJsonBody(request);
+        const allowedKeys = ['active', 'title', 'artist', 'album', 'source', 'playback', 'cover', 'bass'] as const;
+        if (!allowedKeys.some((key) => Object.hasOwn(payload, key))) throw new Error('Aucune donnée de test à appliquer.');
+        if (Object.hasOwn(payload, 'active') && typeof payload.active !== 'boolean') throw new Error('Activation du mode test invalide.');
+        for (const key of ['title', 'artist', 'album', 'source'] as const) {
+          if (Object.hasOwn(payload, key) && (typeof payload[key] !== 'string' || payload[key].length > 300)) {
+            throw new Error('Métadonnée de test invalide.');
+          }
+        }
+        if (Object.hasOwn(payload, 'playback') && payload.playback !== 'playing' && payload.playback !== 'paused') throw new Error('État de lecture invalide.');
+        if (Object.hasOwn(payload, 'cover') && payload.cover !== 'sample' && payload.cover !== 'missing') throw new Error('État de pochette invalide.');
+        if (Object.hasOwn(payload, 'bass') && (typeof payload.bass !== 'number' || !Number.isFinite(payload.bass) || payload.bass < 0 || payload.bass > 1)) throw new Error('Niveau de basses invalide.');
+
+        if (typeof payload.active === 'boolean') testMode.active = payload.active;
+        for (const key of ['title', 'artist', 'album', 'source'] as const) {
+          if (typeof payload[key] === 'string') testMode[key] = payload[key].trim();
+        }
+        if (payload.playback === 'playing' || payload.playback === 'paused') testMode.playback = payload.playback;
+        if (payload.cover === 'sample' || payload.cover === 'missing') testMode.cover = payload.cover;
+        if (typeof payload.bass === 'number') testMode.bass = payload.bass;
+        state.version += 1;
+        if (state.skin === 'random' && testMode.active) applyRandomVisualSkin();
+        syncRandomSkinTimer(true);
+        syncTestAudioTimer();
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(testModeForClient()));
+      } catch (error) {
+        send(response, 400, 'application/json; charset=utf-8', JSON.stringify({ error: errorMessage(error) }));
+      }
       return;
     }
     if (request.method === 'POST' && url.pathname === '/api/settings') {
@@ -1024,6 +1159,16 @@ export async function startOverlayService({
       case '/app.js':
         await sendStatic(response, 'app.js', 'text/javascript; charset=utf-8');
         break;
+      case '/test':
+      case '/test.html':
+        await sendStatic(response, 'test.html', 'text/html; charset=utf-8');
+        break;
+      case '/test.css':
+        await sendStatic(response, 'test.css', 'text/css; charset=utf-8');
+        break;
+      case '/test.js':
+        await sendStatic(response, 'test.js', 'text/javascript; charset=utf-8');
+        break;
       case '/i18n.js':
         await sendStatic(response, 'i18n.js', 'text/javascript; charset=utf-8');
         break;
@@ -1080,6 +1225,9 @@ export async function startOverlayService({
       case '/api/settings':
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(settingsForClient()));
         break;
+      case '/api/test-mode':
+        send(response, 200, 'application/json; charset=utf-8', JSON.stringify(testModeForClient()));
+        break;
       case '/api/audio':
         send(response, 200, 'application/json; charset=utf-8', JSON.stringify(audioForClient()));
         break;
@@ -1131,6 +1279,7 @@ export async function startOverlayService({
       closing = true;
       stopListening();
       clearRandomSkinTimer();
+      if (testAudioTimer) clearInterval(testAudioTimer);
       for (const timer of pendingMetadataRefreshes) clearTimeout(timer);
       pendingMetadataRefreshes.clear();
       const refreshManagers = [...activeMetadataRefreshManagers];
