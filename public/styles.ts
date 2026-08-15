@@ -45,6 +45,22 @@ function updateInspectorCopy() {
   selectedStyleDescription.textContent = card?.querySelector('small')?.textContent ?? '';
 }
 
+function previewSelection() {
+  livePreviewFrame.contentWindow?.postMessage({
+    type: 'what-i-listen:preview-style',
+    skin: pendingSkin,
+    neonPalette: pendingNeonPalette,
+    spectrumPalette: pendingSpectrumPalette,
+  }, window.location.origin);
+}
+
+function clearPreviewSelection() {
+  livePreviewFrame.contentWindow?.postMessage({
+    type: 'what-i-listen:preview-style',
+    skin: null,
+  }, window.location.origin);
+}
+
 function selectSkin(skin: OverlaySkin) {
   pendingSkin = skin;
   skinOptions.forEach((option) => {
@@ -56,6 +72,7 @@ function selectSkin(skin: OverlaySkin) {
   neonPaletteControl.hidden = skin !== 'neon';
   spectrumPaletteControl.hidden = skin !== 'spectrum';
   updateInspectorCopy();
+  previewSelection();
 }
 
 function setControlsDisabled(disabled: boolean) {
@@ -111,6 +128,7 @@ async function applySelection(): Promise<boolean> {
     pendingSpectrumPalette = savedSpectrumPalette;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    clearPreviewSelection();
     setStatus('settings.skinSaved');
     return true;
   } catch {
@@ -160,12 +178,14 @@ skinOptions.forEach((option) => option.addEventListener('change', () => {
 neonPaletteOptions.forEach((option) => option.addEventListener('change', () => {
   if (!option.checked) return;
   pendingNeonPalette = option.value as NeonPalette;
+  previewSelection();
   setStatus('styles.readyToApply');
 }));
 
 spectrumPaletteOptions.forEach((option) => option.addEventListener('change', () => {
   if (!option.checked) return;
   pendingSpectrumPalette = option.value as SpectrumPalette;
+  previewSelection();
   setStatus('styles.readyToApply');
 }));
 
@@ -181,6 +201,7 @@ filterButtons.forEach((button) => button.addEventListener('click', () => {
 
 searchInput.addEventListener('input', filterStyles);
 applyButton.addEventListener('click', () => { void applySelection(); });
+livePreviewFrame.addEventListener('load', previewSelection);
 
 document.addEventListener('app-language-change', () => {
   updateInspectorCopy();

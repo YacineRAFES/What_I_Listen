@@ -70,6 +70,55 @@ let lastAudioUpdate = 0;
 let titleMarqueeAnimationFrame: number | null = null;
 let titleMarqueeEnabled = true;
 
+interface StylePreview {
+  skin: OverlaySkin;
+  neonPalette: NeonPalette;
+  spectrumPalette: SpectrumPalette;
+}
+
+const previewSkins = new Set<OverlaySkin>(['random', 'luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid']);
+const previewNeonPalettes = new Set<NeonPalette>(['violet-cyan', 'sunset', 'laser']);
+const previewSpectrumPalettes = new Set<SpectrumPalette>(['modern', 'ocean-mist', 'fire-storm', 'scope']);
+const visualizerForPreviewSkin: Readonly<Record<ConcreteOverlaySkin, VisualizerMode>> = Object.freeze({
+  luna: 'bars',
+  winamp: 'spectrum',
+  glass: 'ripple',
+  aura: 'pulse',
+  neon: 'bars',
+  spectrum: 'spectrum',
+  battery: 'battery',
+  meter: 'meter',
+  oscilloscope: 'oscilloscope',
+  tunnel: 'tunnel',
+  particles: 'particles',
+  spiral: 'spiral',
+  plasma: 'plasma',
+  kaleidoscope: 'kaleidoscope',
+  fractal: 'fractal',
+  fluid: 'fluid',
+  feedback: 'feedback',
+  'milkdrop-spiral': 'milkdrop',
+  'milkdrop-fractal': 'milkdrop',
+  'milkdrop-neon': 'milkdrop',
+  'milkdrop-liquid': 'milkdrop',
+});
+const randomPreviewSkins = Object.keys(visualizerForPreviewSkin)
+  .filter((skin) => ['tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid'].includes(skin)) as ConcreteOverlaySkin[];
+let stylePreview: StylePreview | null = null;
+let randomPreviewSkin: ConcreteOverlaySkin = 'tunnel';
+
+function dataWithStylePreview(data: NowPlayingData): NowPlayingData {
+  if (!stylePreview) return data;
+  const skin = stylePreview.skin === 'random' ? randomPreviewSkin : stylePreview.skin;
+  return {
+    ...data,
+    skin,
+    visualizer: visualizerForPreviewSkin[skin],
+    neonPalette: stylePreview.neonPalette,
+    spectrumPalette: stylePreview.spectrumPalette,
+  };
+}
+
 function applyAudioLevels(audio?: AudioLevels) {
   // La sortie Windows peut contenir YouTube, un jeu, etc. Le spectrum ne doit
   // bouger que pendant la lecture du morceau suivi par l'overlay (Deezer).
@@ -384,6 +433,7 @@ function setTitle(value: string) {
 
 function update(data: NowPlayingData) {
   latestData = data;
+  data = dataWithStylePreview(data);
   if (data.language) window.i18n.setLanguage(data.language);
   card.dataset.skin = data.skin || 'luna';
   card.dataset.neonPalette = data.neonPalette || 'violet-cyan';
@@ -427,6 +477,32 @@ function update(data: NowPlayingData) {
   refreshCover(data);
   card.classList.add('visible');
 }
+
+window.addEventListener('message', (event) => {
+  if (!previewMode || !embeddedMode || window.parent === window) return;
+  if (event.origin !== window.location.origin || event.source !== window.parent) return;
+  if (!event.data || event.data.type !== 'what-i-listen:preview-style') return;
+
+  if (event.data.skin === null) {
+    stylePreview = null;
+    void refresh();
+    return;
+  }
+
+  if (!previewSkins.has(event.data.skin)
+    || !previewNeonPalettes.has(event.data.neonPalette)
+    || !previewSpectrumPalettes.has(event.data.spectrumPalette)) return;
+
+  if (event.data.skin === 'random' && stylePreview?.skin !== 'random') {
+    randomPreviewSkin = randomPreviewSkins[Math.floor(Math.random() * randomPreviewSkins.length)] ?? 'tunnel';
+  }
+  stylePreview = {
+    skin: event.data.skin,
+    neonPalette: event.data.neonPalette,
+    spectrumPalette: event.data.spectrumPalette,
+  };
+  if (latestData) update(latestData);
+});
 
 document.addEventListener('app-language-change', () => {
   if (latestData) update(latestData);
