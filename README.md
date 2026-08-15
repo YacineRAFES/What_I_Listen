@@ -35,7 +35,7 @@ What I Listen peut envoyer un webhook local à SAMMI Core lorsqu’un nouveau co
 2. Dans un deck SAMMI, crée un bouton et ajoute-lui un déclencheur **Webhook** dont le message est `what_i_listen_track_changed`.
 3. Dans les paramètres du bouton, active **Expose Payload**.
 4. Ajoute **Twitch: Send Chat Message** et saisis `/$payload.data.message$/` dans le champ du message. SAMMI encapsule les données personnalisées du webhook dans `payload.data`.
-5. Dans les paramètres de What I Listen, ouvre **SAMMI Core et Twitch**, saisis le port et l’éventuel mot de passe API, puis active l’intégration.
+5. Dans What I Listen, ouvre **Intégrations avancées**, saisis le port et l’éventuel mot de passe API, puis active l’intégration SAMMI.
 6. Clique sur **Tester SAMMI et Twitch**. Un test réussi confirme que SAMMI Core a accepté le webhook ; le message apparaît dans Twitch lorsque le bouton et la connexion Twitch de SAMMI sont opérationnels.
 
 Le webhook contient aussi les champs `title`, `artist`, `album`, `source`, `playback`, `test` et `sentAt`. Le modèle de message accepte les marqueurs `{title}`, `{artist}`, `{album}` et `{source}`.

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title data-i18n="integrations.title">Intégrations avancées — What I Listen</title>
+    <link rel="icon" href="/app-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/app.css">
+    <link rel="stylesheet" href="/settings.css">
+  </head>
+  <body class="app-layout settings-page">
+    <header class="window-titlebar">
+      <div class="window-brand" aria-label="What I Listen"><img src="/app-icon.svg" alt="" aria-hidden="true"><span>What I Listen</span></div>
+    </header>
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav" data-i18n-aria-label="nav.label" aria-label="Navigation principale">
+        <a href="/app"><span class="sidebar-icon" aria-hidden="true">⌂</span><span data-i18n="nav.home">Accueil</span></a>
+        <a href="/styles"><span class="sidebar-icon" aria-hidden="true">◈</span><span data-i18n="nav.styles">Styles</span></a>
+        <a class="active" href="/integrations"><span class="sidebar-icon" aria-hidden="true">⌘</span><span data-i18n="nav.integrations">Intégrations avancées</span></a>
+        <a href="/settings"><span class="sidebar-icon" aria-hidden="true">⚙</span><span data-i18n="nav.settings">Paramètres</span></a>
+      </nav>
+      <div class="sidebar-meta"><span data-i18n="app.versionLabel">Version</span><strong data-app-version>—</strong></div>
+    </aside>
+
+    <main class="app-shell settings-shell">
+      <header class="page-toolbar">
+        <div>
+          <p class="workspace-eyebrow" data-i18n="integrations.eyebrow">AUTOMATISATION</p>
+          <h1 data-i18n="integrations.heading">Intégrations avancées</h1>
+          <p class="page-intro" data-i18n="integrations.intro">Connecte What I Listen aux outils externes utilisés pour ton stream.</p>
+        </div>
+        <span class="settings-saved-indicator"><i></i><span data-i18n="settings.autoSave">Enregistrement automatique</span></span>
+      </header>
+
+      <div class="settings-grid">
+        <section class="settings-panel sammi-card">
+          <header class="settings-section-heading"><span class="settings-section-icon" aria-hidden="true">↗</span><div><h2 data-i18n="settings.sammi.title">SAMMI Core et Twitch</h2><p data-i18n="settings.sammi.description">Déclenche un webhook SAMMI à chaque nouveau morceau détecté.</p></div></header>
+          <div class="setting-row sammi-enable-row">
+            <div class="setting-copy"><h3 data-i18n="settings.sammi.enabled.title">Envoyer les changements à SAMMI</h3><p data-i18n="settings.sammi.enabled.description">Un morceau n’est envoyé qu’une fois ; les pauses, reprises et changements de pochette sont ignorés.</p></div>
+            <label class="switch" data-i18n-title="settings.sammi.enabled.title" title="Envoyer les changements à SAMMI"><input id="sammi-enabled" type="checkbox"><span class="slider"></span></label>
+          </div>
+          <div class="sammi-settings-content">
+            <label class="field-control" for="sammi-port"><span data-i18n="settings.sammi.port">Port local SAMMI</span><input id="sammi-port" name="sammi-port" type="number" min="1" max="65535" step="1" inputmode="numeric" value="9450"></label>
+            <label class="field-control" for="sammi-webhook-trigger"><span data-i18n="settings.sammi.trigger">Nom du webhook</span><input id="sammi-webhook-trigger" name="sammi-webhook-trigger" type="text" maxlength="100" value="what_i_listen_track_changed" spellcheck="false"></label>
+            <label class="field-control" for="sammi-password"><span data-i18n="settings.sammi.password">Mot de passe API</span><input id="sammi-password" name="sammi-password" type="password" maxlength="256" autocomplete="off" data-i18n-placeholder="settings.sammi.passwordPlaceholder" placeholder="Facultatif"></label>
+            <div class="field-control sammi-template-field">
+              <label for="sammi-message-template" data-i18n="settings.sammi.template">Message envoyé à SAMMI</label>
+              <input id="sammi-message-template" name="sammi-message-template" type="text" maxlength="500" value="🎵 En écoute : {artist} — {title}">
+              <div class="sammi-placeholder-shortcuts" data-i18n-aria-label="settings.sammi.placeholdersLabel" aria-label="Insérer une variable dans le message">
+                <button type="button" data-sammi-placeholder="{title}" data-i18n-title="settings.sammi.insertTitle" title="Insérer le titre">{title}</button>
+                <button type="button" data-sammi-placeholder="{artist}" data-i18n-title="settings.sammi.insertArtist" title="Insérer l’artiste">{artist}</button>
+                <button type="button" data-sammi-placeholder="{album}" data-i18n-title="settings.sammi.insertAlbum" title="Insérer l’album">{album}</button>
+                <button type="button" data-sammi-placeholder="{source}" data-i18n-title="settings.sammi.insertSource" title="Insérer la source">{source}</button>
+              </div>
+              <small data-i18n="settings.sammi.placeholders">Clique sur une variable pour l’insérer à la position du curseur.</small>
+            </div>
+            <div class="sammi-test-row">
+              <div class="setting-copy"><p data-i18n="settings.sammi.testHint">Le test envoie le morceau actuel, ou des données d’exemple. SAMMI doit ensuite exécuter sa commande Twitch.</p></div>
+              <button id="test-sammi" class="secondary-action" type="button" data-i18n="settings.sammi.test">Tester SAMMI et Twitch</button>
+            </div>
+          </div>
+        </section>
+      </div>
+      <p id="save-status" class="save-status" role="status" data-i18n="settings.loading">Chargement des paramètres…</p>
+    </main>
+    <script type="module" src="/i18n.js"></script>
+    <script type="module" src="/shell.js"></script>
+    <script type="module" src="/integrations.js"></script>
+  </body>
+</html>
