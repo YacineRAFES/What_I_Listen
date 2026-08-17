@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.11.0...v0.12.0) (2026-08-17)
+
+### Features
+
+* **overlay:** ajouter les formats alternatifs ([8f649a8](https://github.com/YacineRAFES/What_I_Listen/commit/8f649a86c006062457d816d41af74c129c278bff))
+* **test:** add complete OBS simulation mode ([0954de3](https://github.com/YacineRAFES/What_I_Listen/commit/0954de39ee0bfba215d752cfd599c32d8efd55ad))
+
 ## [0.11.0](https://github.com/YacineRAFES/What_I_Listen/compare/v0.10.1...v0.11.0) (2026-08-15)
 
 ### Features
