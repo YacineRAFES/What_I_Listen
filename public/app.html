@@ -100,7 +100,7 @@
           <div id="home-preview-viewport" class="home-preview-viewport">
             <iframe id="home-preview-frame" src="/?debug&amp;preview&amp;embedded" tabindex="-1" data-i18n-title="styles.livePreviewFrameTitle" title="Aperçu en direct de l’overlay OBS"></iframe>
           </div>
-          <div class="preview-meta"><span data-i18n="app.dashboard.browserSource">Source Navigateur active</span><strong>520 × 130</strong></div>
+          <div class="preview-meta"><span data-i18n="app.dashboard.browserSource">Source Navigateur active</span><strong id="home-overlay-size">520 × 130</strong></div>
         </section>
 
         <section class="dashboard-panel obs-setup-panel">
@@ -113,7 +113,7 @@
               <li data-i18n="app.guide.step1">Garde cette application ouverte pendant le stream.</li>
               <li data-i18n="app.guide.step2">Dans OBS, dans Sources, clique sur + puis choisis Navigateur.</li>
               <li data-i18n="app.guide.step3">Donne-lui un nom, par exemple What I Listen — Deezer.</li>
-              <li data-i18n="app.guide.step4">Colle l’URL locale ci-dessous, puis règle la taille sur 520 × 130.</li>
+              <li><span data-i18n="app.guide.step4Prefix">Colle l’URL locale ci-dessous, puis règle la taille sur</span> <strong id="obs-overlay-size">520 × 130</strong>.</li>
             </ol>
             <div class="setup-url-column">
               <label class="url-label" for="copy-url" data-i18n="app.dashboard.localUrl">URL locale de l’overlay</label>

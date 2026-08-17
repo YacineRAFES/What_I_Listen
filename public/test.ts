@@ -12,6 +12,7 @@ const pauseButton = document.querySelector<HTMLButtonElement>('#test-pause')!;
 const nextButton = document.querySelector<HTMLButtonElement>('#test-next')!;
 const previewFrame = document.querySelector<HTMLIFrameElement>('#test-preview-frame')!;
 const previewViewport = document.querySelector<HTMLElement>('#test-preview-viewport')!;
+const overlaySize = document.querySelector<HTMLElement>('#test-overlay-size')!;
 const summaryPlayback = document.querySelector<HTMLElement>('#summary-playback')!;
 const summaryTitle = document.querySelector<HTMLElement>('#summary-title')!;
 const summaryDetails = document.querySelector<HTMLElement>('#summary-details')!;
@@ -28,6 +29,8 @@ const longTitle = 'Un morceau au titre volontairement beaucoup trop long pour te
 let current: TestModeData | null = null;
 let nextTitleIndex = 0;
 let bassTimer: number | undefined;
+let previewWidth = 520;
+let previewHeight = 130;
 
 function setMessage(key: string, error = false) {
   message.textContent = t(key);
@@ -136,10 +139,24 @@ document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) =
 });
 
 function resizePreview() {
-  const scale = Math.min(1, previewViewport.clientWidth / 520);
+  const scale = Math.min(1, previewViewport.clientWidth / previewWidth);
+  previewFrame.style.width = `${previewWidth}px`;
+  previewFrame.style.height = `${previewHeight}px`;
   previewFrame.style.transform = `scale(${scale})`;
-  previewViewport.style.height = `${Math.ceil(130 * scale)}px`;
+  previewViewport.style.height = `${Math.ceil(previewHeight * scale)}px`;
 }
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== window.location.origin || event.source !== previewFrame.contentWindow) return;
+  if (event.data?.type !== 'what-i-listen:overlay-size') return;
+  const width = Number(event.data.width);
+  const height = Number(event.data.height);
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) return;
+  previewWidth = width;
+  previewHeight = height;
+  overlaySize.textContent = `${width} × ${height}`;
+  resizePreview();
+});
 
 document.addEventListener('app-language-change', () => {
   if (current) render(current, false);

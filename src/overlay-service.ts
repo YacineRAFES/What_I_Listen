@@ -7,12 +7,14 @@ import { createSessionManager } from 'windows-media-sessions';
 const root = dirname(fileURLToPath(import.meta.url));
 const publicDirectory = join(root, '..', 'public');
 const overlaySkins = new Set<OverlaySkin>(['random', 'luna', 'winamp', 'glass', 'aura', 'neon', 'spectrum', 'battery', 'meter', 'oscilloscope', 'tunnel', 'particles', 'spiral', 'plasma', 'kaleidoscope', 'fractal', 'fluid', 'feedback', 'milkdrop-spiral', 'milkdrop-fractal', 'milkdrop-neon', 'milkdrop-liquid']);
+const overlayFormats = new Set<OverlayFormat>(['horizontal', 'compact', 'square', 'ticker']);
 const neonPalettes = new Set(['violet-cyan', 'sunset', 'laser']);
 const spectrumPalettes = new Set(['modern', 'ocean-mist', 'fire-storm', 'scope']);
 const supportedLanguages = new Set(['fr', 'en']);
 const appThemes = new Set(['dark', 'light']);
 const defaultSettings = Object.freeze({
   skin: 'luna',
+  format: 'horizontal',
   neonPalette: 'violet-cyan',
   spectrumPalette: 'modern',
   audioOutputDeviceId: '',
@@ -185,6 +187,10 @@ function normalizeSkin(value: unknown): OverlaySkin {
   return typeof value === 'string' && overlaySkins.has(value as OverlaySkin) ? value as OverlaySkin : defaultSettings.skin;
 }
 
+function normalizeFormat(value: unknown): OverlayFormat {
+  return typeof value === 'string' && overlayFormats.has(value as OverlayFormat) ? value as OverlayFormat : defaultSettings.format;
+}
+
 interface TestModeState {
   active: boolean;
   title: string;
@@ -275,6 +281,7 @@ async function loadSettings(settingsPath?: string): Promise<OverlaySettings> {
     const settings = JSON.parse(await readFile(settingsPath, 'utf8')) as SettingsUpdate;
     return {
       skin: normalizeSkin(settings.skin),
+      format: normalizeFormat(settings.format),
       neonPalette: normalizeNeonPalette(settings.neonPalette),
       spectrumPalette: normalizeSpectrumPalette(settings.spectrumPalette),
       audioOutputDeviceId: normalizeAudioOutputDeviceId(settings.audioOutputDeviceId),
@@ -353,6 +360,7 @@ export async function startOverlayService({
     thumbnail: '',
     visualizer: visualizerForSkin[initialEffectiveSkin],
     skin: savedSettings.skin,
+    format: savedSettings.format,
     effectiveSkin: initialEffectiveSkin,
     neonPalette: savedSettings.neonPalette,
     spectrumPalette: savedSettings.spectrumPalette,
@@ -691,6 +699,7 @@ export async function startOverlayService({
       version: state.version,
       visualizer: state.visualizer,
       skin: state.effectiveSkin,
+      format: state.format,
       neonPalette: state.neonPalette,
       spectrumPalette: state.spectrumPalette,
       titleMarquee: state.titleMarquee,
@@ -716,6 +725,7 @@ export async function startOverlayService({
   function settingsForClient(): OverlaySettings {
     return {
       skin: state.skin,
+      format: state.format,
       neonPalette: state.neonPalette,
       spectrumPalette: state.spectrumPalette,
       audioOutputDeviceId: state.audioOutputDeviceId,
@@ -1000,6 +1010,7 @@ export async function startOverlayService({
         const updatesLanguage = Object.hasOwn(payload, 'language');
         const updatesAppTheme = Object.hasOwn(payload, 'appTheme');
         const updatesSkin = Object.hasOwn(payload, 'skin');
+        const updatesFormat = Object.hasOwn(payload, 'format');
         const updatesNeonPalette = Object.hasOwn(payload, 'neonPalette');
         const updatesSpectrumPalette = Object.hasOwn(payload, 'spectrumPalette');
         const updatesAudioOutputDeviceId = Object.hasOwn(payload, 'audioOutputDeviceId');
@@ -1014,12 +1025,13 @@ export async function startOverlayService({
           'fadeInDuration', 'fadeOutDuration', 'pauseHideDelay',
         ] as const;
         const updatesCustomization = customizationKeys.some((key) => Object.hasOwn(payload, key));
-        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId && !updatesSammiEnabled && !updatesSammiPort && !updatesSammiPassword && !updatesSammiWebhookTrigger && !updatesSammiMessageTemplate && !updatesCustomization) throw new Error('Aucun paramètre à enregistrer.');
+        if (!updatesStartHidden && !updatesTitleMarquee && !updatesLanguage && !updatesAppTheme && !updatesSkin && !updatesFormat && !updatesNeonPalette && !updatesSpectrumPalette && !updatesAudioOutputDeviceId && !updatesSammiEnabled && !updatesSammiPort && !updatesSammiPassword && !updatesSammiWebhookTrigger && !updatesSammiMessageTemplate && !updatesCustomization) throw new Error('Aucun paramètre à enregistrer.');
         if (updatesStartHidden && typeof payload.startHidden !== 'boolean') throw new Error('Valeur de démarrage invalide.');
         if (updatesTitleMarquee && typeof payload.titleMarquee !== 'boolean') throw new Error('Valeur de défilement invalide.');
         if (updatesLanguage && (typeof payload.language !== 'string' || !supportedLanguages.has(payload.language))) throw new Error('Langue non prise en charge.');
         if (updatesAppTheme && (typeof payload.appTheme !== 'string' || !appThemes.has(payload.appTheme))) throw new Error('Thème d’application inconnu.');
         if (updatesSkin && (typeof payload.skin !== 'string' || !overlaySkins.has(payload.skin))) throw new Error('Style d’overlay inconnu.');
+        if (updatesFormat && (typeof payload.format !== 'string' || !overlayFormats.has(payload.format))) throw new Error('Format d’overlay inconnu.');
         if (updatesNeonPalette && (typeof payload.neonPalette !== 'string' || !neonPalettes.has(payload.neonPalette))) throw new Error('Palette néon inconnue.');
         if (updatesSpectrumPalette && (typeof payload.spectrumPalette !== 'string' || !spectrumPalettes.has(payload.spectrumPalette))) throw new Error('Palette Spectrum inconnue.');
         if (updatesAudioOutputDeviceId && (typeof payload.audioOutputDeviceId !== 'string' || payload.audioOutputDeviceId.length > 512)) throw new Error('Périphérique audio invalide.');
@@ -1044,6 +1056,7 @@ export async function startOverlayService({
         if (typeof payload.titleMarquee === 'boolean') state.titleMarquee = payload.titleMarquee;
         if (typeof payload.language === 'string') state.language = payload.language as OverlaySettings['language'];
         if (typeof payload.appTheme === 'string') state.appTheme = payload.appTheme as AppTheme;
+        if (typeof payload.format === 'string') state.format = payload.format as OverlayFormat;
         if (typeof payload.neonPalette === 'string') state.neonPalette = payload.neonPalette as NeonPalette;
         if (typeof payload.spectrumPalette === 'string') state.spectrumPalette = payload.spectrumPalette as SpectrumPalette;
         if (typeof payload.audioOutputDeviceId === 'string') state.audioOutputDeviceId = normalizeAudioOutputDeviceId(payload.audioOutputDeviceId);

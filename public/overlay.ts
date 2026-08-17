@@ -79,6 +79,7 @@ let pauseHiddenKey = '';
 
 interface StylePreview {
   skin: OverlaySkin;
+  format: OverlayFormat;
   neonPalette: NeonPalette;
   spectrumPalette: SpectrumPalette;
   showCover: boolean;
@@ -134,6 +135,7 @@ function dataWithStylePreview(data: NowPlayingData): NowPlayingData {
   return {
     ...data,
     skin,
+    format: stylePreview.format,
     visualizer: visualizerForPreviewSkin[skin],
     neonPalette: stylePreview.neonPalette,
     spectrumPalette: stylePreview.spectrumPalette,
@@ -169,6 +171,25 @@ function applyCustomization(data: NowPlayingData) {
   card.classList.toggle('custom-background', Math.abs((data.backgroundOpacity ?? .92) - .92) > .001 || (data.backgroundBlur || 0) > 0);
   if (!data.autoAccent) card.style.setProperty('--custom-accent', data.accentColor || '#8d5cff');
   else if (cover.complete && cover.naturalWidth) applyAccentFromCover(cover);
+}
+
+const overlayDimensions: Readonly<Record<OverlayFormat, { width: number; height: number }>> = Object.freeze({
+  horizontal: { width: 520, height: 130 },
+  compact: { width: 360, height: 92 },
+  square: { width: 320, height: 320 },
+  ticker: { width: 760, height: 64 },
+});
+
+function applyFormat(format: OverlayFormat) {
+  const safeFormat = Object.hasOwn(overlayDimensions, format) ? format : 'horizontal';
+  card.dataset.format = safeFormat;
+  if (embeddedMode && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'what-i-listen:overlay-size',
+      format: safeFormat,
+      ...overlayDimensions[safeFormat],
+    }, window.location.origin);
+  }
 }
 
 function applyAudioLevels(audio?: AudioLevels) {
@@ -500,6 +521,7 @@ function update(data: NowPlayingData) {
   currentDisplayData = data;
   if (data.language) window.i18n.setLanguage(data.language);
   card.dataset.skin = data.skin || 'luna';
+  applyFormat(data.format || 'horizontal');
   card.dataset.neonPalette = data.neonPalette || 'violet-cyan';
   card.dataset.spectrumPalette = data.spectrumPalette || 'modern';
   applyCustomization(data);
@@ -578,6 +600,7 @@ window.addEventListener('message', (event) => {
   }
 
   if (!previewSkins.has(event.data.skin)
+    || !Object.hasOwn(overlayDimensions, event.data.format)
     || !previewNeonPalettes.has(event.data.neonPalette)
     || !previewSpectrumPalettes.has(event.data.spectrumPalette)
     || !/^#[0-9a-f]{6}$/i.test(event.data.accentColor)
@@ -589,6 +612,7 @@ window.addEventListener('message', (event) => {
   }
   stylePreview = {
     skin: event.data.skin,
+    format: event.data.format,
     neonPalette: event.data.neonPalette,
     spectrumPalette: event.data.spectrumPalette,
     showCover: event.data.showCover,

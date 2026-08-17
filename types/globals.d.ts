@@ -60,9 +60,11 @@ type ConcreteOverlaySkin = Exclude<OverlaySkin, 'random'>;
 type NeonPalette = 'violet-cyan' | 'sunset' | 'laser';
 type SpectrumPalette = 'modern' | 'ocean-mist' | 'fire-storm' | 'scope';
 type AppTheme = 'dark' | 'light';
+type OverlayFormat = 'horizontal' | 'compact' | 'square' | 'ticker';
 
 interface OverlaySettings {
   skin: OverlaySkin;
+  format: OverlayFormat;
   neonPalette: NeonPalette;
   spectrumPalette: SpectrumPalette;
   audioOutputDeviceId: string;
@@ -103,6 +105,7 @@ interface NowPlayingData {
   coverUrl: string;
   visualizer: VisualizerMode;
   skin: ConcreteOverlaySkin;
+  format: OverlayFormat;
   neonPalette: NeonPalette;
   spectrumPalette: SpectrumPalette;
   titleMarquee: boolean;

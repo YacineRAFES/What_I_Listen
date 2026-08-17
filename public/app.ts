@@ -9,6 +9,8 @@ const obsUrl = document.querySelector<HTMLElement>('#obs-url')!;
 const copyButton = document.querySelector<HTMLButtonElement>('#copy-url')!;
 const homePreviewFrame = document.querySelector<HTMLIFrameElement>('#home-preview-frame')!;
 const homePreviewViewport = document.querySelector<HTMLElement>('#home-preview-viewport')!;
+const homeOverlaySize = document.querySelector<HTMLElement>('#home-overlay-size')!;
+const obsOverlaySize = document.querySelector<HTMLElement>('#obs-overlay-size')!;
 const diagnosticCount = document.querySelector<HTMLElement>('#diagnostic-count')!;
 const diagnosticRefresh = document.querySelector<HTMLButtonElement>('#diagnostic-refresh')!;
 const diagnosticMeter = document.querySelector<HTMLElement>('#diagnostic-meter')!;
@@ -21,6 +23,8 @@ let latestError = '';
 let latestDiagnostics: StreamDiagnosticData | null = null;
 let diagnosticRefreshPending = false;
 let lastAudioSignalAt = 0;
+let previewWidth = 520;
+let previewHeight = 130;
 
 type DiagnosticStatus = 'checking' | 'ready' | 'warning' | 'error' | 'optional';
 type DiagnosticName = 'deezer' | 'track' | 'device' | 'signal' | 'overlay' | 'sammi';
@@ -126,6 +130,7 @@ function render(data: NowPlayingData) {
   latestData = data;
   latestError = '';
   if (data.language) window.i18n.setLanguage(data.language);
+  setPreviewSizeForFormat(data.format || 'horizontal');
   connection.className = data.error ? 'connection error' : 'connection ok';
   connection.textContent = data.error ? t('app.connection.unavailable') : t('app.connection.active');
   errorText.textContent = data.error || '';
@@ -166,9 +171,28 @@ function refreshCover(data: NowPlayingData) {
 }
 
 function resizeHomePreview() {
-  const scale = Math.min(1, homePreviewViewport.clientWidth / 520);
+  const scale = Math.min(1, homePreviewViewport.clientWidth / previewWidth);
+  homePreviewFrame.style.width = `${previewWidth}px`;
+  homePreviewFrame.style.height = `${previewHeight}px`;
   homePreviewFrame.style.transform = `scale(${scale})`;
-  homePreviewViewport.style.height = `${Math.ceil(130 * scale)}px`;
+  homePreviewViewport.style.height = `${Math.ceil(previewHeight * scale)}px`;
+}
+
+function setPreviewSize(width: number, height: number) {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) return;
+  previewWidth = width;
+  previewHeight = height;
+  const size = `${width} × ${height}`;
+  homeOverlaySize.textContent = size;
+  obsOverlaySize.textContent = size;
+  resizeHomePreview();
+}
+
+function setPreviewSizeForFormat(format: OverlayFormat) {
+  if (format === 'compact') setPreviewSize(360, 92);
+  else if (format === 'square') setPreviewSize(320, 320);
+  else if (format === 'ticker') setPreviewSize(760, 64);
+  else setPreviewSize(520, 130);
 }
 
 async function refresh() {
@@ -209,6 +233,12 @@ copyButton.addEventListener('click', async () => {
 
 diagnosticRefresh.addEventListener('click', () => {
   void Promise.all([refresh(), refreshDiagnostics()]);
+});
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== window.location.origin || event.source !== homePreviewFrame.contentWindow) return;
+  if (event.data?.type !== 'what-i-listen:overlay-size') return;
+  setPreviewSize(Number(event.data.width), Number(event.data.height));
 });
 
 document.addEventListener('app-language-change', () => {

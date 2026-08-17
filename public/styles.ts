@@ -12,6 +12,7 @@ const selectedStyleName = document.querySelector<HTMLElement>('#selected-style-n
 const serviceStatus = document.querySelector<HTMLElement>('#service-status')!;
 const spectrumPaletteControl = document.querySelector<HTMLElement>('#spectrum-palette-control')!;
 const spectrumPaletteOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="spectrum-palette"]')];
+const formatOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="overlay-format"]')];
 const status = document.querySelector<HTMLElement>('#save-status')!;
 const skinOptions = [...document.querySelectorAll<HTMLInputElement>('input[name="skin"]')];
 const skinCards = [...document.querySelectorAll<HTMLElement>('.skin-option')];
@@ -45,9 +46,11 @@ let activeFilter = 'all';
 let pendingNeonPalette: NeonPalette = 'violet-cyan';
 let pendingSkin: OverlaySkin = 'luna';
 let pendingSpectrumPalette: SpectrumPalette = 'modern';
+let pendingFormat: OverlayFormat = 'horizontal';
 let savedNeonPalette: NeonPalette = 'violet-cyan';
 let savedSkin: OverlaySkin = 'luna';
 let savedSpectrumPalette: SpectrumPalette = 'modern';
+let savedFormat: OverlayFormat = 'horizontal';
 let savedCustomization: CustomizationSettings = { ...customizationDefaults };
 let statusKey = 'settings.loading';
 
@@ -126,6 +129,7 @@ function previewSelection() {
     skin: pendingSkin,
     neonPalette: pendingNeonPalette,
     spectrumPalette: pendingSpectrumPalette,
+    format: pendingFormat,
     ...readCustomization(),
   }, window.location.origin);
 }
@@ -156,13 +160,24 @@ function setControlsDisabled(disabled: boolean) {
   skinOptions.forEach((option) => { option.disabled = disabled; });
   neonPaletteOptions.forEach((option) => { option.disabled = disabled; });
   spectrumPaletteOptions.forEach((option) => { option.disabled = disabled; });
+  formatOptions.forEach((option) => { option.disabled = disabled; });
   customizationInputs.forEach((input) => { input.disabled = disabled || (input.dataset.overlaySetting === 'accentColor' && customizationInput('autoAccent').checked); });
 }
 
 function resizeLivePreview() {
-  const scale = Math.min(1, livePreviewViewport.clientWidth / 520);
+  const { width, height } = overlayDimensions(pendingFormat);
+  const scale = Math.min(1, livePreviewViewport.clientWidth / width);
+  livePreviewFrame.style.width = `${width}px`;
+  livePreviewFrame.style.height = `${height}px`;
   livePreviewFrame.style.transform = `scale(${scale})`;
-  livePreviewViewport.style.height = `${Math.ceil(130 * scale)}px`;
+  livePreviewViewport.style.height = `${Math.ceil(height * scale)}px`;
+}
+
+function overlayDimensions(format: OverlayFormat): { width: number; height: number } {
+  if (format === 'compact') return { width: 360, height: 92 };
+  if (format === 'square') return { width: 320, height: 320 };
+  if (format === 'ticker') return { width: 760, height: 64 };
+  return { width: 520, height: 130 };
 }
 
 function filterStyles() {
@@ -197,16 +212,20 @@ async function applySelection(): Promise<boolean> {
       skin: pendingSkin,
       neonPalette: pendingNeonPalette,
       spectrumPalette: pendingSpectrumPalette,
+      format: pendingFormat,
       ...readCustomization(),
     });
     savedSkin = settings.skin;
     savedNeonPalette = settings.neonPalette;
     savedSpectrumPalette = settings.spectrumPalette;
+    savedFormat = settings.format;
     savedCustomization = Object.fromEntries((Object.keys(customizationDefaults) as CustomizationKey[]).map((key) => [key, settings[key]])) as CustomizationSettings;
     pendingNeonPalette = savedNeonPalette;
     pendingSpectrumPalette = savedSpectrumPalette;
+    pendingFormat = savedFormat;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    setRadioValue(formatOptions, pendingFormat);
     applyCustomization(savedCustomization);
     clearPreviewSelection();
     setStatus('settings.skinSaved');
@@ -214,9 +233,12 @@ async function applySelection(): Promise<boolean> {
   } catch {
     pendingNeonPalette = savedNeonPalette;
     pendingSpectrumPalette = savedSpectrumPalette;
+    pendingFormat = savedFormat;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    setRadioValue(formatOptions, pendingFormat);
     applyCustomization(savedCustomization);
+    resizeLivePreview();
     selectSkin(savedSkin);
     setStatus('settings.saveError');
     return false;
@@ -234,12 +256,16 @@ async function load() {
     savedSkin = settings.skin || 'luna';
     savedNeonPalette = settings.neonPalette || 'violet-cyan';
     savedSpectrumPalette = settings.spectrumPalette || 'modern';
+    savedFormat = settings.format || 'horizontal';
     savedCustomization = { ...customizationDefaults, ...Object.fromEntries((Object.keys(customizationDefaults) as CustomizationKey[]).map((key) => [key, settings[key]])) };
     pendingNeonPalette = savedNeonPalette;
     pendingSpectrumPalette = savedSpectrumPalette;
+    pendingFormat = savedFormat;
     setRadioValue(neonPaletteOptions, pendingNeonPalette);
     setRadioValue(spectrumPaletteOptions, pendingSpectrumPalette);
+    setRadioValue(formatOptions, pendingFormat);
     applyCustomization(savedCustomization);
+    resizeLivePreview();
     selectSkin(savedSkin);
     serviceStatus.classList.remove('offline');
     setStatus('styles.loaded');
@@ -268,6 +294,14 @@ neonPaletteOptions.forEach((option) => option.addEventListener('change', () => {
 spectrumPaletteOptions.forEach((option) => option.addEventListener('change', () => {
   if (!option.checked) return;
   pendingSpectrumPalette = option.value as SpectrumPalette;
+  previewSelection();
+  setStatus('styles.readyToApply');
+}));
+
+formatOptions.forEach((option) => option.addEventListener('change', () => {
+  if (!option.checked) return;
+  pendingFormat = option.value as OverlayFormat;
+  resizeLivePreview();
   previewSelection();
   setStatus('styles.readyToApply');
 }));
